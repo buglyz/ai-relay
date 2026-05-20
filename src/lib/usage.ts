@@ -284,6 +284,55 @@ function dateRange(days: number): string[] {
 }
 
 /**
+ * Get the ISO week label for a date string (YYYY-MM-DD).
+ * Returns "YYYY-Www" format (e.g., "2026-W21").
+ */
+function getWeekLabel(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  // ISO week: Thursday determines the week year
+  const jan4 = new Date(d.getFullYear(), 0, 4);
+  const dayOfYear = Math.floor((d.getTime() - new Date(d.getFullYear(), 0, 1).getTime()) / 86400000) + 1;
+  const weekNum = Math.ceil((dayOfYear + jan4.getDay()) / 7);
+  return `${d.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+}
+
+/**
+ * Get the month label for a date string (YYYY-MM-DD).
+ * Returns "YYYY-MM" format.
+ */
+function getMonthLabel(dateStr: string): string {
+  return dateStr.slice(0, 7);
+}
+
+/**
+ * Aggregate daily usage points into weekly or monthly buckets.
+ */
+function aggregatePoints(points: DailyUsagePoint[], labelFn: (date: string) => string): DailyUsagePoint[] {
+  const buckets = new Map<string, DailyUsagePoint>();
+
+  for (const p of points) {
+    const label = labelFn(p.date);
+    const existing = buckets.get(label);
+    if (existing) {
+      existing.requests += p.requests;
+      existing.promptTokens += p.promptTokens;
+      existing.completionTokens += p.completionTokens;
+      existing.totalTokens += p.totalTokens;
+    } else {
+      buckets.set(label, {
+        date: label,
+        requests: p.requests,
+        promptTokens: p.promptTokens,
+        completionTokens: p.completionTokens,
+        totalTokens: p.totalTokens,
+      });
+    }
+  }
+
+  return Array.from(buckets.values());
+}
+
+/**
  * Parse a KV hash into a DailyUsagePoint for a given date.
  */
 function parseDailyPoint(date: string, raw: Record<string, unknown> | null): DailyUsagePoint {
@@ -298,17 +347,32 @@ function parseDailyPoint(date: string, raw: Record<string, unknown> | null): Dai
 
 /**
  * Get usage trend data for the admin dashboard.
- * Returns global daily data and per-provider breakdown.
+ * Supports day/week/month granularity with aggregated views.
+ *
+ * For week/month, we fetch daily KV data and aggregate server-side.
  */
 export async function getUsageTrend(
-  range: '7d' | '30d'
+  range: string,
+  granularity: 'day' | 'week' | 'month' = 'day'
 ): Promise<{ global: DailyUsagePoint[]; providers: ProviderDailyUsage[] }> {
   const kv = await getKV();
   if (!kv) {
     return { global: [], providers: [] };
   }
 
-  const days = range === '7d' ? 7 : 30;
+  // Determine how many days to fetch based on range + granularity
+  // For day: range = "7d"/"30d" → 7/30 days
+  // For week: range = "4w"/"12w" → 28/84 days
+  // For month: range = "6m"/"12m" → 180/365 days
+  let days: number;
+  if (granularity === 'day') {
+    days = range === '30d' ? 30 : 7;
+  } else if (granularity === 'week') {
+    days = range === '12w' ? 84 : 28;
+  } else {
+    days = range === '12m' ? 365 : 180;
+  }
+
   const dates = dateRange(days);
 
   // Fetch global daily data for all dates in parallel
@@ -327,15 +391,29 @@ export async function getUsageTrend(
     return { provider, data };
   });
 
-  const [global, providers] = await Promise.all([
+  const [globalDaily, providersDaily] = await Promise.all([
     Promise.all(globalPromises),
     Promise.all(providerPromises),
   ]);
 
-  // Filter out providers with zero usage across all days
-  const activeProviders = providers.filter((p) =>
-    p.data.some((d) => d.totalTokens > 0)
-  );
+  // Aggregate if needed
+  if (granularity === 'day') {
+    // No aggregation — return as-is
+    const activeProviders = providersDaily.filter((p) =>
+      p.data.some((d) => d.totalTokens > 0)
+    );
+    return { global: globalDaily, providers: activeProviders };
+  }
 
-  return { global, providers: activeProviders };
+  const labelFn = granularity === 'week' ? getWeekLabel : getMonthLabel;
+
+  const global = aggregatePoints(globalDaily, labelFn);
+  const providers = providersDaily
+    .map((p) => ({
+      provider: p.provider,
+      data: aggregatePoints(p.data, labelFn),
+    }))
+    .filter((p) => p.data.some((d) => d.totalTokens > 0));
+
+  return { global, providers };
 }

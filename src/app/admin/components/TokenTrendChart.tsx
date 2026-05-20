@@ -12,7 +12,7 @@ import {
   Legend,
 } from 'recharts';
 
-interface DailyUsagePoint {
+interface UsagePoint {
   date: string;
   requests: number;
   promptTokens: number;
@@ -20,16 +20,41 @@ interface DailyUsagePoint {
   totalTokens: number;
 }
 
-interface ProviderDailyUsage {
+interface ProviderUsage {
   provider: string;
-  data: DailyUsagePoint[];
+  data: UsagePoint[];
 }
 
 interface UsageTrendData {
-  range: '7d' | '30d';
-  global: DailyUsagePoint[];
-  providers: ProviderDailyUsage[];
+  range: string;
+  granularity: 'day' | 'week' | 'month';
+  global: UsagePoint[];
+  providers: ProviderUsage[];
 }
+
+type Granularity = 'day' | 'week' | 'month';
+
+/** Range options per granularity */
+const RANGE_OPTIONS: Record<Granularity, { value: string; label: string }[]> = {
+  day: [
+    { value: '7d', label: '7 Days' },
+    { value: '30d', label: '30 Days' },
+  ],
+  week: [
+    { value: '4w', label: '4 Weeks' },
+    { value: '12w', label: '12 Weeks' },
+  ],
+  month: [
+    { value: '6m', label: '6 Months' },
+    { value: '12m', label: '12 Months' },
+  ],
+};
+
+const GRANULARITY_LABELS: Record<Granularity, string> = {
+  day: '日',
+  week: '周',
+  month: '月',
+};
 
 const PROVIDER_COLORS: Record<string, string> = {
   openai: '#10b981',
@@ -54,16 +79,23 @@ interface TokenTrendChartProps {
 
 export default function TokenTrendChart({ apiKey }: TokenTrendChartProps) {
   const [data, setData] = useState<UsageTrendData | null>(null);
-  const [range, setRange] = useState<'7d' | '30d'>('7d');
+  const [granularity, setGranularity] = useState<Granularity>('day');
+  const [range, setRange] = useState('7d');
   const [selectedProvider, setSelectedProvider] = useState<string>('all');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // When granularity changes, reset range to default for that granularity
+  const handleGranularityChange = (g: Granularity) => {
+    setGranularity(g);
+    setRange(RANGE_OPTIONS[g][0].value);
+  };
 
   const fetchTrend = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/usage-trend?range=${range}`, {
+      const res = await fetch(`/api/admin/usage-trend?granularity=${granularity}&range=${range}`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
       if (!res.ok) throw new Error('Failed to fetch trend data');
@@ -74,7 +106,7 @@ export default function TokenTrendChart({ apiKey }: TokenTrendChartProps) {
     } finally {
       setLoading(false);
     }
-  }, [apiKey, range]);
+  }, [apiKey, granularity, range]);
 
   useEffect(() => {
     fetchTrend();
@@ -86,9 +118,32 @@ export default function TokenTrendChart({ apiKey }: TokenTrendChartProps) {
     return n.toString();
   };
 
+  /** Format x-axis labels based on granularity */
   const fmtDate = (date: string) => {
+    if (granularity === 'month') {
+      // "2026-05" → "5月"
+      const month = parseInt(date.slice(5, 7), 10);
+      return `${month}月`;
+    }
+    if (granularity === 'week') {
+      // "2026-W21" → "W21"
+      return date.replace(/^\d{4}-/, '');
+    }
+    // Day: "2026-05-21" → "5/21"
     const d = new Date(date + 'T00:00:00');
     return `${d.getMonth() + 1}/${d.getDate()}`;
+  };
+
+  /** Format tooltip labels */
+  const fmtTooltipDate = (date: string) => {
+    if (granularity === 'month') {
+      return date; // "2026-05"
+    }
+    if (granularity === 'week') {
+      return `Week ${date.replace(/^\d{4}-W/, '')}`;
+    }
+    const d = new Date(date + 'T00:00:00');
+    return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
   };
 
   // Get chart data based on selected provider
@@ -116,7 +171,7 @@ export default function TokenTrendChart({ apiKey }: TokenTrendChartProps) {
         padding: '0.75rem 1rem',
         fontSize: '0.85rem',
       }}>
-        <div style={{ color: '#888', marginBottom: '0.5rem' }}>{label}</div>
+        <div style={{ color: '#888', marginBottom: '0.5rem' }}>{fmtTooltipDate(label)}</div>
         {payload.map((entry: any, i: number) => (
           <div key={i} style={{ color: entry.color, marginBottom: '0.25rem' }}>
             {entry.name}: {fmtTokens(entry.value)}
@@ -150,7 +205,7 @@ export default function TokenTrendChart({ apiKey }: TokenTrendChartProps) {
         <h2 style={{ fontSize: '1.2rem', marginTop: 0, margin: 0 }}>
           📉 Token Consumption Trend
         </h2>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Provider filter */}
           <div style={{ display: 'flex', gap: '0.25rem' }}>
             {availableProviders.map((p) => (
@@ -173,23 +228,48 @@ export default function TokenTrendChart({ apiKey }: TokenTrendChartProps) {
               </button>
             ))}
           </div>
-          {/* Range selector */}
+
+          {/* Separator */}
+          <div style={{ width: '1px', height: '20px', backgroundColor: '#333' }} />
+
+          {/* Granularity switcher */}
           <div style={{ display: 'flex', gap: '0.25rem' }}>
-            {(['7d', '30d'] as const).map((r) => (
+            {(['day', 'week', 'month'] as const).map((g) => (
               <button
-                key={r}
-                onClick={() => setRange(r)}
+                key={g}
+                onClick={() => handleGranularityChange(g)}
                 style={{
                   padding: '0.35rem 0.75rem',
                   borderRadius: '6px',
-                  border: range === r ? 'none' : '1px solid #333',
-                  backgroundColor: range === r ? '#2563eb' : 'transparent',
-                  color: range === r ? 'white' : '#888',
+                  border: granularity === g ? 'none' : '1px solid #333',
+                  backgroundColor: granularity === g ? '#7c3aed' : 'transparent',
+                  color: granularity === g ? 'white' : '#888',
                   fontSize: '0.8rem',
                   cursor: 'pointer',
                 }}
               >
-                {r === '7d' ? '7 Days' : '30 Days'}
+                {GRANULARITY_LABELS[g]}
+              </button>
+            ))}
+          </div>
+
+          {/* Range selector */}
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            {RANGE_OPTIONS[granularity].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setRange(opt.value)}
+                style={{
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '6px',
+                  border: range === opt.value ? 'none' : '1px solid #333',
+                  backgroundColor: range === opt.value ? '#2563eb' : 'transparent',
+                  color: range === opt.value ? 'white' : '#888',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                }}
+              >
+                {opt.label}
               </button>
             ))}
           </div>
@@ -210,7 +290,7 @@ export default function TokenTrendChart({ apiKey }: TokenTrendChartProps) {
 
       {!loading && !error && data && chartData.length > 0 && (
         <>
-          {/* Provider-specific chart: single line showing total tokens */}
+          {/* Provider-specific chart: stacked prompt/completion */}
           {selectedProvider !== 'all' ? (
             <ResponsiveContainer width="100%" height={320}>
               <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
@@ -261,7 +341,7 @@ export default function TokenTrendChart({ apiKey }: TokenTrendChartProps) {
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            /* All providers: stacked area by provider */
+            /* All providers: stacked area */
             <ResponsiveContainer width="100%" height={320}>
               <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#222" />
@@ -334,7 +414,7 @@ export default function TokenTrendChart({ apiKey }: TokenTrendChartProps) {
         </>
       )}
 
-      {!loading && !error && (!data || chartData.every((d: DailyUsagePoint) => d.totalTokens === 0)) && (
+      {!loading && !error && (!data || chartData.every((d: UsagePoint) => d.totalTokens === 0)) && (
         <div style={{ textAlign: 'center', padding: '3rem', color: '#555' }}>
           No usage data yet for this period
         </div>

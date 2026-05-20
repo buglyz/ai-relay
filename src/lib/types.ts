@@ -54,9 +54,13 @@ export interface ProviderDailyUsage {
   data: DailyUsagePoint[];
 }
 
+/** Time granularity for trend views */
+export type Granularity = 'day' | 'week' | 'month';
+
 /** Usage trend API response */
 export interface UsageTrendResponse {
-  range: '7d' | '30d';
+  range: string;
+  granularity: Granularity;
   global: DailyUsagePoint[];
   providers: ProviderDailyUsage[];
 }
