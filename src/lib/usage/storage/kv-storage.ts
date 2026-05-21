@@ -91,17 +91,20 @@ async function getKV() {
   if (_kvChecked) return _kv;
   _kvChecked = true;
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+    console.error('[KV] Missing env vars: KV_REST_API_URL or KV_REST_API_TOKEN');
     return null;
   }
   try {
-    const { createClient } = await import('@vercel/kv');
-    _kv = createClient({
+    const mod = await import('@vercel/kv');
+    // Use the default 'kv' export (pre-configured client from env vars)
+    _kv = mod.kv || mod.createClient({
       url: process.env.KV_REST_API_URL,
       token: process.env.KV_REST_API_TOKEN,
     });
+    console.error('[KV] Client initialized, type:', typeof _kv, 'methods:', Object.keys(_kv || {}).join(','));
     return _kv;
   } catch (e) {
-    console.error('[KV] Failed to create client:', e);
+    console.error('[KV] Failed to init client:', e);
     return null;
   }
 }
