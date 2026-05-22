@@ -66,24 +66,22 @@ export async function relayRequest(
 
   // Select an API key
   const apiKey = await selectKey(provider);
-  if (!apiKey) {
-    throw new RelayError(
-      `No API keys configured for provider: ${provider.displayName}`,
-      'server_error',
-      503
+  let primaryResult: { result: RelayResult | null; lastError: Error | null } = { result: null, lastError: null };
+
+  if (apiKey) {
+    // Retry with key rotation + exponential backoff
+    const pool = await getKeyPool(provider);
+    const maxRetries = Math.min(pool.keys.length, 3);
+
+    // Try primary provider with retries (with concurrency control)
+    primaryResult = await withConcurrency(
+      () => tryProviderWithRetries(provider, body, apiKey, maxRetries)
     );
-  }
-
-  // Retry with key rotation + exponential backoff
-  const pool = await getKeyPool(provider);
-  const maxRetries = Math.min(pool.keys.length, 3);
-
-  // Try primary provider with retries (with concurrency control)
-  const primaryResult = await withConcurrency(
-    () => tryProviderWithRetries(provider, body, apiKey, maxRetries)
-  );
-  if (primaryResult.result) {
-    return primaryResult.result;
+    if (primaryResult.result) {
+      return primaryResult.result;
+    }
+  } else {
+    primaryResult.lastError = new Error(`No API keys configured for provider: ${provider.displayName}`);
   }
 
   // If primary provider failed, try fallback chain from KV (or static default)
