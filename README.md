@@ -36,6 +36,7 @@
 - **健康检查** — `/health` 端点用于监控
 - **虚拟模型映射** — 将虚拟模型名映射到真实模型
 - **一键部署** — 2 分钟内部署到 Vercel
+- **📱 移动端适配** — 响应式管理后台，手机上也能随时调整中转策略
 
 ### 📸 截图展示
 
@@ -100,7 +101,7 @@ POST https://你的项目.vercel.app/v1/chat/completions
 **curl：**
 ```bash
 curl -X POST https://你的项目.vercel.app/v1/chat/completions \
-  -H "Authorization: Bearer *** \
+  -H "Authorization: Bearer YOUR_R...KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "gpt-4o", "messages": [{"role": "user", "content": "你好！"}]}'
 ```
@@ -175,6 +176,8 @@ Client → Edge Runtime (全球分发, <50ms 延迟)
 | **自定义 Provider** | 添加 / 编辑 / 删除自定义 Provider |
 | **用量统计** | 查看请求次数和 Token 用量 |
 | **Key Pool 状态** | 实时同步所有密钥状态 |
+
+> 💡 **移动端友好**：Admin 后台采用响应式设计，在手机浏览器上也能流畅操作，随时随地调整中转策略、查看用量、管理密钥。
 
 ### 🏁 同类项目对比
 
