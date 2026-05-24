@@ -1,6 +1,26 @@
 import { describe, it, expect } from 'vitest';
 import { resolveProvider, resolveFallbackModel, resolveUpstreamModel } from '../lib/providers/resolver';
 
+describe('GPT provider resolution tests', () => {
+  it('should route common GPT models to gw2 while keeping GPT-5 on lpgpt', async () => {
+    const gpt4oProvider = await resolveProvider('gpt-4o');
+    expect(gpt4oProvider).not.toBeNull();
+    expect(gpt4oProvider?.name).toBe('gw2_oops_asia');
+
+    const gpt4TurboProvider = await resolveProvider('gpt-4-turbo');
+    expect(gpt4TurboProvider).not.toBeNull();
+    expect(gpt4TurboProvider?.name).toBe('gw2_oops_asia');
+
+    const gpt35Provider = await resolveProvider('gpt-3.5-turbo');
+    expect(gpt35Provider).not.toBeNull();
+    expect(gpt35Provider?.name).toBe('gw2_oops_asia');
+
+    const gpt5Provider = await resolveProvider('gpt-5.3');
+    expect(gpt5Provider).not.toBeNull();
+    expect(gpt5Provider?.name).toBe('lpgpt');
+  });
+});
+
 describe('mimo-v2.5 provider resolution and mapping tests', () => {
   it('should resolve the correct provider for each mimo-v2.5 variant', async () => {
     // mimo-v2.5-coding should resolve to xiaomi_coding

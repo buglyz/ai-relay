@@ -25,6 +25,21 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
       { id: 'gpt-5.5', displayName: 'GPT-5.5', contextWindow: 128000, maxOutput: 16384, supportsStream: true, supportsVision: true, supportsTools: true },
     ],
   },
+  gw2_oops_asia: {
+    name: 'gw2_oops_asia',
+    displayName: 'GW2 Oops Asia',
+    baseUrl: 'https://gw2.oops.asia/v1',
+    modelPrefixes: ['gpt-4o', 'gpt-4-', 'gpt-3.5'],
+    headerFormat: 'openai',
+    envKeyField: 'GW2_OOPS_ASIA_KEYS',
+    envBaseUrlField: 'GW2_OOPS_ASIA_BASE_URL',
+    models: [
+      { id: 'gpt-4o', displayName: 'GPT-4o', contextWindow: 128000, maxOutput: 16384, supportsStream: true, supportsVision: true, supportsTools: true },
+      { id: 'gpt-4o-mini', displayName: 'GPT-4o Mini', contextWindow: 128000, maxOutput: 16384, supportsStream: true, supportsVision: true, supportsTools: true },
+      { id: 'gpt-4-turbo', displayName: 'GPT-4 Turbo', contextWindow: 128000, maxOutput: 4096, supportsStream: true, supportsVision: true, supportsTools: true },
+      { id: 'gpt-3.5-turbo', displayName: 'GPT-3.5 Turbo', contextWindow: 16385, maxOutput: 4096, supportsStream: true, supportsTools: true },
+    ],
+  },
   openai: {
     name: 'openai',
     displayName: 'OpenAI',
