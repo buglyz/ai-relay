@@ -661,8 +661,8 @@ export async function saveAlertThresholds(thresholds: WebhookAlertThreshold[]): 
 /**
  * Get all custom providers from KV.
  */
-export async function getCustomProviders(): Promise<Record<string, ProviderConfig>> {
-  const cached = getCached<Record<string, ProviderConfig>>('customProviders');
+export async function getCustomProviders(forceRefresh = false): Promise<Record<string, ProviderConfig>> {
+  const cached = forceRefresh ? null : getCached<Record<string, ProviderConfig>>('customProviders');
   if (cached) return cached;
 
   try {
@@ -703,7 +703,7 @@ export async function saveCustomProvider(provider: ProviderConfig): Promise<void
   if (!kv) {
     throw new Error('KV storage not configured — cannot save custom provider');
   }
-  const custom = await getCustomProviders();
+  const custom = await getCustomProviders(true);
   custom[provider.name] = {
     ...provider,
     isCustom: true,
@@ -726,7 +726,7 @@ export async function deleteCustomProvider(name: string): Promise<void> {
   if (!kv) {
     throw new Error('KV storage not configured — cannot delete custom provider');
   }
-  const custom = await getCustomProviders();
+  const custom = await getCustomProviders(true);
   delete custom[name];
   await kv.set('admin:custom_providers', JSON.stringify(custom));
   // Clean up keys and fallbacks entries

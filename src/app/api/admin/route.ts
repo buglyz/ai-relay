@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   const authResponse = requireAdminAuth(request);
   if (authResponse) return authResponse;
 
-  const allProviders = await getAllProviders();
+  const allProviders = await getAllProviders(true);
   // Eagerly init all provider pools so stats reflect all configured providers
   await initAllKeyPools(allProviders, true);
   const providerStats = getKeyPoolStats();

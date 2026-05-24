@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
   if (authErr) return authErr;
 
   const { provider } = await params;
-  const allProviders = await getAllProviders();
+  const allProviders = await getAllProviders(true);
   const config = allProviders[provider];
   if (!config) {
     return Response.json(
@@ -68,7 +68,7 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
   if (authErr) return authErr;
 
   const { provider } = await params;
-  const allProviders = await getAllProviders();
+  const allProviders = await getAllProviders(true);
   const config = allProviders[provider];
   if (!config) {
     return Response.json(
@@ -143,7 +143,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Params 
   if (authErr) return authErr;
 
   const { provider } = await params;
-  const allProviders = await getAllProviders();
+  const allProviders = await getAllProviders(true);
   const config = allProviders[provider];
   if (!config) {
     return Response.json(

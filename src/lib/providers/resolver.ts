@@ -35,13 +35,13 @@ export function resolveModelAlias(model: string): string {
 let cachedProviders: Record<string, ProviderConfig> | null = null;
 let cacheTimestamp = 0;
 
-export async function getAllProviders(): Promise<Record<string, ProviderConfig>> {
+export async function getAllProviders(forceRefresh = false): Promise<Record<string, ProviderConfig>> {
   const now = Date.now();
-  if (cachedProviders && now - cacheTimestamp < 5000) {
+  if (!forceRefresh && cachedProviders && now - cacheTimestamp < 5000) {
     return cachedProviders;
   }
   try {
-    const custom = await getCustomProviders();
+    const custom = await getCustomProviders(forceRefresh);
     const merged = { ...PROVIDERS };
     for (const [name, config] of Object.entries(custom)) {
       merged[name] = {
@@ -222,4 +222,3 @@ export async function resolveFallbackModel(originalModel: string, targetProvider
       return originalModel;
   }
 }
-

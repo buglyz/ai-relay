@@ -26,7 +26,7 @@ export async function POST(request: NextRequest, { params }: { params: Params })
   if (authErr) return authErr;
 
   const { provider: providerName } = await params;
-  const allProviders = await getAllProviders();
+  const allProviders = await getAllProviders(true);
   const provider = allProviders[providerName];
   if (!provider) {
     return Response.json(
