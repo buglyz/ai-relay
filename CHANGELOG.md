@@ -6,6 +6,10 @@
 
 ## [Unreleased]
 
+（暂无）
+
+## [2.1.0] - 2026-05-25
+
 ### Added
 - 新增 AI Relay v2.1 产品规划文档，明确下一阶段围绕 Setup Wizard、Provider Health Dashboard、Request Logs 提升部署后激活和排障体验。
 - 新增 AI Relay v2.1 设计规范，为后台可观测性、状态展示和排障链路提供统一体验基线。
