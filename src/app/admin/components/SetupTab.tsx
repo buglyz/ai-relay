@@ -126,7 +126,11 @@ export default function SetupTab({ t, setupData, loading, onRunChecks, onOpenKey
     providerKeys: {
       title: t.setupProviderKeysFixTitle,
       envKeys: providerEnvKeys,
-      steps: [t.setupProviderKeysStep1, t.setupProviderKeysStep2, t.setupProviderKeysStep3],
+      steps: [
+        t.setupProviderKeysStep1,
+        isCf ? (t.setupProviderKeysStep2Cf || t.setupProviderKeysStep2) : t.setupProviderKeysStep2,
+        t.setupProviderKeysStep3,
+      ],
       actionLabel: t.setupOpenKeysAction,
       onAction: () => onOpenKeys(firstUnconfiguredProvider?.id),
     },
@@ -137,7 +141,7 @@ export default function SetupTab({ t, setupData, loading, onRunChecks, onOpenKey
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
         <div>
           <h2 style={{ margin: 0, color: '#fff' }}>{t.setupTitle}</h2>
-          <p style={{ margin: '0.35rem 0 0', color: '#9ca3af' }}>{t.setupDesc}</p>
+          <p style={{ margin: '0.35rem 0 0', color: '#9ca3af' }}>{isCf ? (t.setupDescCf || t.setupDesc) : t.setupDesc}</p>
         </div>
         <button className="tab-btn active" onClick={onRunChecks} disabled={loading}>{loading ? t.refreshing : t.setupRunChecks}</button>
       </div>

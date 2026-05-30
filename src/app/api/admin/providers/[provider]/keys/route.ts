@@ -40,7 +40,12 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
     );
   }
 
-  const managedKeys = await getManagedKeys(provider);
+  let managedKeys: string[] | null = null;
+  try {
+    managedKeys = await getManagedKeys(provider);
+  } catch {
+    // KV unavailable — fall back to env keys
+  }
   const envKeys = config.envKeyField
     ? (process.env[config.envKeyField] || '').split(',').map((k) => k.trim()).filter(Boolean)
     : [];
@@ -125,7 +130,12 @@ export async function POST(request: NextRequest, { params }: { params: Params })
   const envKeys = config.envKeyField
     ? (process.env[config.envKeyField] || '').split(',').map((k) => k.trim()).filter(Boolean)
     : [];
-  const existing = await getManagedKeys(provider);
+  let existing: string[] | null = null;
+  try {
+    existing = await getManagedKeys(provider);
+  } catch {
+    // KV unavailable — bootstrap from env keys
+  }
   const current = existing ? [...existing] : [...envKeys];
   const initialCount = current.length;
   const addedKeys: string[] = [];

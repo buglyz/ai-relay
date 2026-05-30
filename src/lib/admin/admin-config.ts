@@ -554,21 +554,22 @@ export async function getManagedKeys(providerName: string, forceRefresh = false)
 
   const kv = await getKV();
   if (kv) {
-    const raw = await withTimeout(
-      kv.get(`${PREFIX.keys}${providerName}`),
-      1000,
-      undefined,
-      `getManagedKeys:${providerName}`
-    );
-    if (raw === undefined) {
-      throw new Error(`Timeout fetching managed keys for ${providerName}`);
-    }
-    if (raw) {
-      const parsed = parseJsonOrArray(raw);
-      if (parsed) {
-        setCached(cacheKey, parsed);
-        return parsed;
+    try {
+      const raw = await withTimeout(
+        kv.get(`${PREFIX.keys}${providerName}`),
+        1000,
+        null,
+        `getManagedKeys:${providerName}`
+      );
+      if (raw) {
+        const parsed = parseJsonOrArray(raw);
+        if (parsed) {
+          setCached(cacheKey, parsed);
+          return parsed;
+        }
       }
+    } catch {
+      // KV unavailable — fall through to return null
     }
     setCached(cacheKey, null);
     return null;
@@ -583,14 +584,16 @@ export async function getManagedKeysVersion(providerName: string): Promise<numbe
 
   const kv = await getKV();
   if (!kv) return 0;
-  const raw = await withTimeout(
-    kv.get(`${PREFIX.keyVersion}${providerName}`),
-    1000,
-    undefined,
-    `getManagedKeysVersion:${providerName}`
-  );
-  if (raw === undefined) {
-    throw new Error(`Timeout fetching key version for ${providerName}`);
+  let raw: any;
+  try {
+    raw = await withTimeout(
+      kv.get(`${PREFIX.keyVersion}${providerName}`),
+      1000,
+      null,
+      `getManagedKeysVersion:${providerName}`
+    );
+  } catch {
+    return 0;
   }
   const version = Number(raw || 0);
   setCached(cacheKey, version, CONFIG_CACHE_TTL_MS); // 60s cache
@@ -1027,7 +1030,22 @@ export function tryDecodeBase64(str: string): string {
 export async function exportBackupData(): Promise<Record<string, any>> {
   const kv = await getKV();
   if (!kv) {
-    throw new Error('KV storage not configured');
+    return {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      customProviders: {},
+      keys: {},
+      fallbacks: {},
+      quota: null,
+      modelAliases: { aliases: {}, hidden: [] },
+      priorityRules: [],
+      webhooks: {
+        webhooks: [],
+        alertThresholds: [],
+        reportTime: '21:00',
+        reportTimezone: 'Asia/Shanghai',
+      }
+    };
   }
 
   // 1. Get custom providers
@@ -1249,7 +1267,22 @@ export async function importBackupData(data: Record<string, any>): Promise<void>
 export async function exportStatsData(startDate: string, endDate: string): Promise<Record<string, any>> {
   const kv = await getKV();
   if (!kv) {
-    throw new Error('KV storage not configured');
+    return {
+      type: 'ai-relay-stats-backup',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      startDate,
+      endDate,
+      data: {
+        usageDaily: {},
+        usageProviderDaily: {},
+        errorProviderDaily: {},
+        dailyReports: {},
+        quotaDaily: {},
+        quotaMonthly: {},
+        errorKeys: {}
+      }
+    };
   }
 
   // Parse dates
