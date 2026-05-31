@@ -247,7 +247,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Params 
     updateMemoryKeyPool(provider, remaining);
 
     // Clear key errors from storage when a key is deleted
-    const usageStorage = createUsageStorage();
+    const usageStorage = await createUsageStorage();
     await usageStorage.clearKeyErrors(keyHash);
 
     return Response.json({

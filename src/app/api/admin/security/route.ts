@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   const authResponse = requireAdminAuth(request);
   if (authResponse) return authResponse;
 
-  const usageStorage = createUsageStorage();
+  const usageStorage = await createUsageStorage();
   const url = new URL(request.url);
   const forceRefresh = url.searchParams.get('refresh') === '1';
   const allProviders = await getAllProviders(forceRefresh);

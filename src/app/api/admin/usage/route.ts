@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const authErr = requireAdminAuth(request);
   if (authErr) return authErr;
 
-  const usageStorage = createUsageStorage();
+  const usageStorage = await createUsageStorage();
   const allProviders = await getAllProviders();
   // Eagerly init all provider pools
   await initAllKeyPools(allProviders);

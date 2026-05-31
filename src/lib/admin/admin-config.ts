@@ -191,9 +191,9 @@ async function getKV() {
 
   // Cloudflare Pages: use CF KV binding via CFKVAdapter
   const { isCloudflare, getCFEnv } = await import('@/lib/cf-env');
-  if (isCloudflare()) {
+  if (await isCloudflare()) {
     try {
-      const cfEnv = getCFEnv();
+      const cfEnv = await getCFEnv();
       if (cfEnv?.KV) {
         const { CFKVAdapter } = await import('./cf-kv-adapter');
         return new CFKVAdapter(cfEnv.KV);
@@ -1502,7 +1502,7 @@ export async function importStatsData(payload: Record<string, any>): Promise<voi
   // On CF, also write usage data to D1 so the chart reads from the correct store
   try {
     const { getCFEnv } = await import('@/lib/cf-env');
-    const cfEnv = getCFEnv();
+    const cfEnv = await getCFEnv();
     if (cfEnv?.DB) {
       const d1Stmts: any[] = [];
       const upsertSql = `INSERT INTO daily_usage (date, provider, requests, tokens, prompt_tokens, completion_tokens)

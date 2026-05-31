@@ -68,7 +68,7 @@ function wrapStreamWithUsageTracking(
       latencyMs,
       isStream: true,
     });
-    batchRecorder.record(event);
+    await batchRecorder.record(event);
     await recordRequestLog({
       traceId,
       timestamp: new Date().toISOString(),
@@ -195,7 +195,7 @@ function estimatePromptTokens(body: { messages?: Array<{ content?: string | Arra
  * Routes requests to the appropriate upstream provider based on model prefix.
  */
 export async function POST(request: NextRequest) {
-  const usageStorage = createUsageStorage();
+  const usageStorage = await createUsageStorage();
   batchRecorder.setStorage(usageStorage as any);
   const traceId = request.headers.get('x-request-id') || `trace_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   const routeStartTime = Date.now();
@@ -353,7 +353,7 @@ export async function POST(request: NextRequest) {
             latencyMs,
             isStream: false,
           });
-          batchRecorder.record(event);
+          await batchRecorder.record(event);
           await recordRequestLog({
             traceId,
             timestamp: new Date().toISOString(),

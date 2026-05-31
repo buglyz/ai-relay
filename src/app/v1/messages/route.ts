@@ -95,7 +95,7 @@ function wrapAnthropicStreamWithUsageTracking(
       latencyMs,
       isStream: true,
     });
-    batchRecorder.record(event);
+    await batchRecorder.record(event);
     await recordRequestLog({
       traceId,
       timestamp: new Date().toISOString(),
@@ -180,7 +180,7 @@ function validateBody(body: Partial<AnthropicMessagesRequest>): string | null {
 }
 
 export async function POST(request: NextRequest) {
-  const usageStorage = createUsageStorage();
+  const usageStorage = await createUsageStorage();
   batchRecorder.setStorage(usageStorage as any);
   const traceId = request.headers.get('x-request-id') || `trace_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
           latencyMs,
           isStream: false,
         });
-        batchRecorder.record(event);
+        await batchRecorder.record(event);
         await recordRequestLog({
           traceId,
           timestamp: new Date().toISOString(),

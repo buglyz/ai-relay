@@ -38,7 +38,7 @@ async function getKV() {
   const g = global as any;
 
   // Cloudflare Pages: use CF KV binding via CFKVAdapter
-  const cfEnv = getCFEnv();
+  const cfEnv = await getCFEnv();
   if (cfEnv?.KV) {
     try {
       const { CFKVAdapter } = await import('@/lib/admin/cf-kv-adapter');

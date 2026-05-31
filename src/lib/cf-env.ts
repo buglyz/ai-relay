@@ -18,10 +18,10 @@ export interface CFEnv {
   DB: import('@cloudflare/workers-types').D1Database;
 }
 
-export function getCFEnv(): CFEnv | null {
+export async function getCFEnv(): Promise<CFEnv | null> {
   try {
     const { getCloudflareContext } = require('@opennextjs/cloudflare');
-    const context = getCloudflareContext();
+    const context = await getCloudflareContext({ async: true });
     if (context && context.env) {
       return context.env as unknown as CFEnv;
     }
@@ -29,7 +29,7 @@ export function getCFEnv(): CFEnv | null {
   return null;
 }
 
-export function isCloudflare(): boolean {
-  return getCFEnv() !== null;
+export async function isCloudflare(): Promise<boolean> {
+  return (await getCFEnv()) !== null;
 }
 

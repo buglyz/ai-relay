@@ -20,7 +20,7 @@ export const runtime = 'nodejs';
  */
 export async function GET(request: NextRequest) {
   // Vercel cron sends a special header; also allow admin auth
-  const usageStorage = createUsageStorage();
+  const usageStorage = await createUsageStorage();
   const isVercelCron = request.headers.get('x-vercel-cron') === '1';
   const cronSecret = process.env.CRON_SECRET;
   const isCronSecret = !!(cronSecret && request.headers.get('x-cron-secret') === cronSecret);

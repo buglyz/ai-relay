@@ -9,8 +9,8 @@ import { D1UsageStorage } from './storage/d1-usage-storage';
 import type { UsageStorage } from './sdk';
 import { getCFEnv } from '@/lib/cf-env';
 
-export function createUsageStorage(): UsageStorage {
-  const cfEnv = getCFEnv();
+export async function createUsageStorage(): Promise<UsageStorage> {
+  const cfEnv = await getCFEnv();
   if (cfEnv?.DB) {
     return new D1UsageStorage(cfEnv.DB);
   }

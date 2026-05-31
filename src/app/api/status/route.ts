@@ -14,7 +14,7 @@ export const runtime = 'nodejs';
 let cachedStatus: { expiresAt: number; response: unknown } | null = null;
 
 export async function GET(request: NextRequest) {
-  const usageStorage = createUsageStorage();
+  const usageStorage = await createUsageStorage();
   const url = new URL(request.url);
   const showDetails = url.searchParams.get('detail') === '1';
 

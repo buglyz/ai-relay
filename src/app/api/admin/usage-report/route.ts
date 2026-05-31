@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const from = url.searchParams.get('from') || to;
 
   try {
-    const cfEnv = getCFEnv();
+    const cfEnv = await getCFEnv();
     if (cfEnv?.DB) {
       const dates = enumerateDateKeys(from, to);
       const rows = await cfEnv.DB.prepare(
