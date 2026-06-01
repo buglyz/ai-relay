@@ -149,7 +149,7 @@ In your GitHub repository, go to **Settings → Secrets and variables → Action
 | `RELAY_API_KEY` | Client request auth key (choose any strong secret) | ✅ |
 | `RELAY_ADMIN_KEY` | Admin login key (optional, defaults to `RELAY_API_KEY`) | ⬜ |
 | `RELAY_SIGNING_SECRET` | Temp key signing secret (optional, defaults to `RELAY_API_KEY`) | ⬜ |
-| `CRON_SECRET` | Cron job auth key (optional, auto-generated if omitted) | ⬜ |
+| `CRON_SECRET` | Cron job auth key (optional; falls back to Admin/API Key auth when omitted) | ⬜ |
 
 > **How to get a Cloudflare API Token:**
 > 1. Visit [Cloudflare Dashboard](https://dash.cloudflare.com/profile/api-tokens)

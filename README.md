@@ -153,7 +153,7 @@ curl -X POST https://你的项目.vercel.app/v1/chat/completions \
 | `RELAY_API_KEY` | 客户端请求鉴权密钥（自定义强密码） | ✅ |
 | `RELAY_ADMIN_KEY` | 后台管理登录密钥（可选，默认同 `RELAY_API_KEY`） | ⬜ |
 | `RELAY_SIGNING_SECRET` | 临时 Key 签名密钥（可选，默认同 `RELAY_API_KEY`） | ⬜ |
-| `CRON_SECRET` | Cron 任务鉴权密钥（可选，自动生成） | ⬜ |
+| `CRON_SECRET` | Cron 任务鉴权密钥（可选；未设置时使用 Admin/API Key 鉴权） | ⬜ |
 
 > **如何获取 Cloudflare API Token：**
 > 1. 访问 [Cloudflare Dashboard](https://dash.cloudflare.com/profile/api-tokens)
