@@ -170,15 +170,15 @@ curl -X POST https://你的项目.vercel.app/v1/chat/completions \
 >
 > **⚠️ 注意：** 必须添加到 **Repository secrets**，不是 Environment secrets。Environment secrets 只在特定环境部署时可用，会导致 workflow 无法读取。
 
-**同时，在 Variables 标签页添加以下变量（Cron 定时任务必需）：**
+**同时，可添加以下变量（启用 GitHub Actions Cron 调用）：**
 
-在 **Settings → Secrets and variables → Actions → Variables** 中添加：
+在 **Settings → Secrets and variables → Actions** 的 **Secrets** 或 **Variables** 中添加：
 
 | Variable | 说明 | 必填 |
 |----------|------|------|
-| `DEPLOY_URL` | 部署完成后的访问地址，例如 `https://ai-relay.pages.dev`（Cron 任务通过此地址发起健康探测和用量聚合请求） | ✅ |
+| `DEPLOY_URL` | Cloudflare Pages 部署完成后的访问地址，例如 `https://ai-relay.pages.dev`（GitHub Actions Cron 通过此地址发起健康探测和用量聚合请求） | 可选 |
 
-> **说明：** `DEPLOY_URL` 是 Repository Variable（不是 Secret），需要在 Variables 标签页单独添加。未配置时 Cron 任务会因 URL 为空而失败（curl exit code 3）。
+> **说明：** 这里的 `DEPLOY_URL` 是 GitHub Actions 中的 Repository Secret 或 Repository Variable，只用于 Cloudflare 部署流程里的 GitHub Actions Cron。Vercel 部署使用 `vercel.json` 中的 Vercel Cron，不需要在 Vercel 后台配置 `DEPLOY_URL`。未配置时 GitHub Actions Cron 工作流会跳过远程健康探测和用量聚合请求，不会因此失败。
 
 **第 2 步 — 推送触发部署**
 

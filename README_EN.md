@@ -163,15 +163,15 @@ In your GitHub repository, go to **Settings → Secrets and variables → Action
 >
 > **⚠️ Note:** Add these to **Repository secrets**, not Environment secrets. Environment secrets are only available in specific deployment environments and will cause the workflow to fail.
 
-**Also add the following in the Variables tab (required for Cron jobs):**
+**Optionally add the following to enable GitHub Actions Cron calls:**
 
-In **Settings → Secrets and variables → Actions → Variables**, add:
+In **Settings → Secrets and variables → Actions**, add it under **Secrets** or **Variables**:
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `DEPLOY_URL` | Your deployed app URL, e.g. `https://ai-relay.pages.dev` (used by Cron jobs to call health probe and usage aggregation endpoints) | ✅ |
+| `DEPLOY_URL` | Your Cloudflare Pages deployment URL, e.g. `https://ai-relay.pages.dev` (used by GitHub Actions Cron to call health probe and usage aggregation endpoints) | Optional |
 
-> **Note:** `DEPLOY_URL` is a Repository Variable (not a Secret) and must be added in the Variables tab. Without it, Cron jobs will fail with `curl exit code 3` because the URL resolves to an empty string.
+> **Note:** This `DEPLOY_URL` is a GitHub Actions Repository Secret or Repository Variable used only by GitHub Actions Cron in the Cloudflare deployment flow. Vercel deployments use Vercel Cron from `vercel.json`, so you do not need to configure `DEPLOY_URL` in the Vercel dashboard. If it is not configured, the GitHub Actions Cron workflow skips the remote health probe and usage aggregation calls without failing.
 
 **Step 2 — Push to trigger deployment**
 
