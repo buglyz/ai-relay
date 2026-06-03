@@ -76,7 +76,7 @@ describe('iteration one provider CRUD UI helpers', () => {
           providers: [],
           usage: { requests: 0, tokens: 0, promptTokens: 0, completionTokens: 0, providers: {} },
           quota: { daily: { used: 0, limit: 0 }, monthly: { used: 0, limit: 0 }, allowed: true, isOverride: false },
-          config: { dailyLimit: null, monthlyLimit: null },
+          config: { dailyLimit: null, monthlyLimit: null, apiKeyMinLength: 20 },
         }}
         lang="zh"
         t={{
