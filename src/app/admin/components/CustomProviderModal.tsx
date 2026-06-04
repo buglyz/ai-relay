@@ -156,6 +156,10 @@ export default function CustomProviderModal({
     setFormModels(formModels.filter((_, i) => i !== index));
   };
 
+  const handleFormClearModels = () => {
+    setFormModels([]);
+  };
+
   // data is still accepted for modal contract parity with parent components.
   void data;
 
@@ -182,6 +186,8 @@ export default function CustomProviderModal({
     fetchingModels: t.fetchingModels || (lang === 'zh' ? '拉取中...' : 'Fetching...'),
     fetchedProviderModels: t.fetchedProviderModels || (lang === 'zh' ? '供应商支持的模型' : 'Provider-supported models'),
     addAllFetchedModels: t.addAllFetchedModels || (lang === 'zh' ? '一键添加全部' : 'Add all'),
+    removeAllFetchedModels: t.removeAllFetchedModels || (lang === 'zh' ? '取消全部' : 'Remove all'),
+    clearAllModels: t.clearAllModels || (lang === 'zh' ? '一键删除全部' : 'Delete all'),
   };
 
   const normalizeFetchedModel = (model: any) => ({
@@ -195,10 +201,12 @@ export default function CustomProviderModal({
     pricing: model.pricing || { input: 0, output: 0 },
   });
 
-  const handleAddFetchedModel = (model: any) => {
+  const handleToggleFetchedModel = (model: any) => {
     if (!model?.id) return;
     setFormModels((current) => {
-      if (current.some((item) => item.id === model.id)) return current;
+      if (current.some((item) => item.id === model.id)) {
+        return current.filter((item) => item.id !== model.id);
+      }
       return [...current, normalizeFetchedModel(model)].sort((a, b) => String(a.id).localeCompare(String(b.id)));
     });
   };
@@ -212,6 +220,12 @@ export default function CustomProviderModal({
       }
       return Array.from(existing.values()).sort((a, b) => String(a.id).localeCompare(String(b.id)));
     });
+  };
+
+  const handleRemoveAllFetchedModels = () => {
+    if (fetchedProviderModels.length === 0) return;
+    const fetchedIds = new Set(fetchedProviderModels.map((model) => model.id));
+    setFormModels((current) => current.filter((model) => !fetchedIds.has(model.id)));
   };
 
   const handleFetchProviderModels = async () => {
@@ -738,6 +752,24 @@ export default function CustomProviderModal({
                 >
                   {t.addModel}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={handleFormClearModels}
+                  disabled={formModels.length === 0}
+                  style={{
+                    padding: '0.3rem 0.6rem',
+                    borderRadius: '4px',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    color: '#fca5a5',
+                    cursor: formModels.length === 0 ? 'not-allowed' : 'pointer',
+                    fontSize: '0.8rem',
+                    opacity: formModels.length === 0 ? 0.55 : 1,
+                  }}
+                >
+                  {helperText.clearAllModels}
+                </button>
               </div>
             </div>
 
@@ -755,23 +787,42 @@ export default function CustomProviderModal({
                   <span style={{ color: '#d1fae5', fontWeight: 700, fontSize: '0.85rem' }}>
                     {helperText.fetchedProviderModels}
                   </span>
-                  <button
-                    type="button"
-                    onClick={handleAddAllFetchedModels}
-                    disabled={fetchedProviderModels.length === 0}
-                    style={{
-                      padding: '0.3rem 0.6rem',
-                      borderRadius: '4px',
-                      border: '1px solid rgba(16, 185, 129, 0.35)',
-                      backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                      color: '#6ee7b7',
-                      cursor: fetchedProviderModels.length === 0 ? 'not-allowed' : 'pointer',
-                      fontSize: '0.78rem',
-                      opacity: fetchedProviderModels.length === 0 ? 0.55 : 1,
-                    }}
-                  >
-                    {helperText.addAllFetchedModels}
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={handleAddAllFetchedModels}
+                      disabled={fetchedProviderModels.length === 0}
+                      style={{
+                        padding: '0.3rem 0.6rem',
+                        borderRadius: '4px',
+                        border: '1px solid rgba(16, 185, 129, 0.35)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                        color: '#6ee7b7',
+                        cursor: fetchedProviderModels.length === 0 ? 'not-allowed' : 'pointer',
+                        fontSize: '0.78rem',
+                        opacity: fetchedProviderModels.length === 0 ? 0.55 : 1,
+                      }}
+                    >
+                      {helperText.addAllFetchedModels}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRemoveAllFetchedModels}
+                      disabled={fetchedProviderModels.length === 0}
+                      style={{
+                        padding: '0.3rem 0.6rem',
+                        borderRadius: '4px',
+                        border: '1px solid rgba(239, 68, 68, 0.32)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.09)',
+                        color: '#fca5a5',
+                        cursor: fetchedProviderModels.length === 0 ? 'not-allowed' : 'pointer',
+                        fontSize: '0.78rem',
+                        opacity: fetchedProviderModels.length === 0 ? 0.55 : 1,
+                      }}
+                    >
+                      {helperText.removeAllFetchedModels}
+                    </button>
+                  </div>
                 </div>
                 {fetchedProviderModels.length > 0 ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
@@ -781,20 +832,21 @@ export default function CustomProviderModal({
                         <button
                           key={model.id}
                           type="button"
-                          onClick={() => handleAddFetchedModel(model)}
-                          disabled={alreadyAdded}
-                          title={model.displayName || model.id}
+                          onClick={() => handleToggleFetchedModel(model)}
+                          title={alreadyAdded
+                            ? (lang === 'zh' ? `点击移除 ${model.id}` : `Click to remove ${model.id}`)
+                            : (lang === 'zh' ? `点击添加 ${model.id}` : `Click to add ${model.id}`)}
                           style={{
                             padding: '0.25rem 0.5rem',
                             borderRadius: '999px',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            backgroundColor: alreadyAdded ? 'rgba(148, 163, 184, 0.12)' : 'rgba(15, 23, 42, 0.55)',
-                            color: alreadyAdded ? '#94a3b8' : '#e5e7eb',
-                            cursor: alreadyAdded ? 'not-allowed' : 'pointer',
+                            border: alreadyAdded ? '1px solid rgba(16, 185, 129, 0.55)' : '1px solid rgba(255,255,255,0.08)',
+                            backgroundColor: alreadyAdded ? 'rgba(16, 185, 129, 0.14)' : 'rgba(15, 23, 42, 0.55)',
+                            color: alreadyAdded ? '#bbf7d0' : '#e5e7eb',
+                            cursor: 'pointer',
                             fontSize: '0.74rem',
                           }}
                         >
-                          {model.id}
+                          {alreadyAdded ? `✓ ${model.id}` : model.id}
                         </button>
                       );
                     })}
