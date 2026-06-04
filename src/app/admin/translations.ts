@@ -51,6 +51,7 @@ export const TRANSLATIONS = {
     importProviderLink: '🔗 导入 Cherry Studio 链接',
     importProviderPlaceholder: '请输入从 Cherry Studio 复制的供应商链接...',
     btnImport: '导入',
+    msgProviderImportReady: '已填充服务商表单：{provider}，获取到 {count} 个模型。确认无误后点击“保存服务商”完成添加。',
     msgProviderImported: '已成功导入服务商：{provider}，包含 {count} 个模型。',
     msgProviderImportedWithoutModels: '已成功导入服务商：{provider}，但获取模型列表失败：{reason}。',
     providerImportErrors: {
@@ -372,6 +373,7 @@ export const TRANSLATIONS = {
     importProviderLink: '🔗 Import Cherry Studio Link',
     importProviderPlaceholder: 'Enter provider link copied from Cherry Studio...',
     btnImport: 'Import',
+    msgProviderImportReady: 'Provider form filled: {provider} with {count} models. Review it and click “Save Provider” to add it.',
     msgProviderImported: 'Provider imported successfully: {provider} with {count} models.',
     msgProviderImportedWithoutModels: 'Provider imported successfully: {provider}, but failed to fetch model list: {reason}.',
     providerImportErrors: {

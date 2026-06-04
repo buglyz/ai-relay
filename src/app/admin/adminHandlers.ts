@@ -495,7 +495,6 @@ export function useAdminHandlers(apiKey: string, t: any) {
       const providers = data?.providers || [];
       const baseProviderConfig = buildImportedProviderConfig({ payload, providers });
       let discoveredModels: any[] = [];
-      let discoverWarning = '';
 
       try {
         const modelsRes = await fetch('/api/admin/providers/models', {
@@ -510,16 +509,18 @@ export function useAdminHandlers(apiKey: string, t: any) {
           }),
         });
         const modelsData = await modelsRes.json();
-        if (modelsRes.ok && Array.isArray(modelsData.models)) {
-          discoveredModels = modelsData.models;
-          if (typeof modelsData.baseUrl === 'string' && modelsData.baseUrl) {
-            payload.baseUrl = modelsData.baseUrl;
-          }
-        } else {
-          discoverWarning = modelsData.error?.message || 'Failed to fetch provider models';
+        if (!modelsRes.ok) {
+          throw new Error(modelsData.error?.message || 'Failed to fetch provider models');
+        }
+        if (!Array.isArray(modelsData.models) || modelsData.models.length === 0) {
+          throw new Error('No models were returned by the provider');
+        }
+        discoveredModels = modelsData.models;
+        if (typeof modelsData.baseUrl === 'string' && modelsData.baseUrl) {
+          payload.baseUrl = modelsData.baseUrl;
         }
       } catch (err) {
-        discoverWarning = err instanceof Error ? err.message : 'Failed to fetch provider models';
+        throw new Error(err instanceof Error ? err.message : 'Failed to fetch provider models');
       }
 
       const providerConfig = buildImportedProviderConfig({
@@ -528,41 +529,17 @@ export function useAdminHandlers(apiKey: string, t: any) {
         models: discoveredModels,
       });
 
-      const providerRes = await fetch('/api/admin/providers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(providerConfig),
+      setEditingCustomProvider({
+        ...providerConfig,
+        id: providerConfig.name,
+        apiKey: payload.apiKey,
+        keyCount: 0,
+        isImportDraft: true,
       });
-      const providerData = await providerRes.json();
-      if (!providerRes.ok) {
-        throw new Error(providerData.error?.message || 'Failed to save imported provider');
-      }
+      setCustomProviderModalOpen(true);
 
-      const keyRes = await fetch(`/api/admin/providers/${providerConfig.name}/keys`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({ key: payload.apiKey }),
-      });
-      const keyData = await keyRes.json();
-      if (!keyRes.ok) {
-        throw new Error(keyData.error?.message || 'Provider saved, but failed to save API key');
-      }
-
-      await fetchData(true);
-      setSelectedProvider(providerConfig.name);
-      await fetchProviderConfig(providerConfig.name);
-
-      const successTemplate = tRef.current.msgProviderImported || 'Provider imported: {provider}. Models: {count}.';
-      const warningTemplate = tRef.current.msgProviderImportedWithoutModels || 'Provider imported: {provider}. Model discovery failed; default prefixes were used.';
-      const text = discoverWarning
-        ? warningTemplate.replace('{provider}', providerConfig.displayName).replace('{reason}', discoverWarning)
-        : successTemplate.replace('{provider}', providerConfig.displayName).replace('{count}', String(discoveredModels.length));
+      const successTemplate = tRef.current.msgProviderImportReady || 'Provider form filled: {provider}. Models: {count}. Review and save to add it.';
+      const text = successTemplate.replace('{provider}', providerConfig.displayName).replace('{count}', String(discoveredModels.length));
       setConfigMessage({ text, type: 'success' });
       return true;
     } catch (e) {

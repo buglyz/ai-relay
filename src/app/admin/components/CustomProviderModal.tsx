@@ -40,6 +40,7 @@ export default function CustomProviderModal({
   onFetchProviderModels,
   providerKeys,
 }: CustomProviderModalProps) {
+  const isImportDraft = !!editingCustomProvider?.isImportDraft;
   // Local states for custom provider form
   const [formId, setFormId] = useState('');
   const [formDisplayName, setFormDisplayName] = useState('');
@@ -82,7 +83,7 @@ export default function CustomProviderModal({
   useEffect(() => {
     if (editingCustomProvider) {
       setSelectedTemplateId('custom');
-      setApiKeyValue('');
+      setApiKeyValue(isImportDraft ? (editingCustomProvider.apiKey || '') : '');
       setSelectedKeyHash('');
       setTestState({ status: 'idle', message: '' });
       setModelFetchState({ status: 'idle', message: '' });
@@ -96,7 +97,7 @@ export default function CustomProviderModal({
       setFetchedProviderModels([]);
 
       // Check if there are existing keys
-      const hasExistingKeys = !!(providerKeys && providerKeys.length > 0);
+      const hasExistingKeys = !isImportDraft && !!(providerKeys && providerKeys.length > 0);
       setUseExistingKey(hasExistingKeys);
       if (hasExistingKeys) {
         setSelectedKeyHash(providerKeys[0].hash);
@@ -126,7 +127,7 @@ export default function CustomProviderModal({
       setModelFetchState({ status: 'idle', message: '' });
       setFetchedProviderModels([]);
     }
-  }, [editingCustomProvider, customProviderModalOpen, providerKeys]);
+  }, [editingCustomProvider, customProviderModalOpen, providerKeys, isImportDraft]);
 
   // Model helper callbacks
   const handleFormAddModel = () => {
@@ -169,7 +170,7 @@ export default function CustomProviderModal({
   });
   const providerValidation = validateDraftProvider(draftProvider);
   const apiKeyValidation = validateApiKeyInput(apiKeyValue, data?.config?.apiKeyMinLength ?? 20);
-  const currentStep = editingCustomProvider ? 1 : apiKeyValue.trim() ? 2 : 0;
+  const currentStep = editingCustomProvider && !isImportDraft ? 1 : apiKeyValue.trim() ? 2 : 0;
   const helperText = {
     chooseTemplate: lang === 'zh' ? '选择模板' : 'Choose template',
     configureKey: lang === 'zh' ? '配置密钥' : 'Configure key',
@@ -328,7 +329,7 @@ export default function CustomProviderModal({
         gap: '1.25rem',
       }}>
         <h2 style={{ fontSize: '1.25rem', margin: 0, color: '#fff', fontWeight: 600 }}>
-          {editingCustomProvider ? t.editCustomProvider : t.addCustomProvider}
+          {editingCustomProvider && !isImportDraft ? t.editCustomProvider : t.addCustomProvider}
         </h2>
 
         <StepperIndicator
@@ -375,13 +376,13 @@ export default function CustomProviderModal({
           <div style={{ gridColumn: '1 / -1' }}>
             <label style={{ display: 'block', fontSize: '0.8rem', color: '#9ca3af', marginBottom: '0.3rem' }}>
               {helperText.apiKey}
-              {editingCustomProvider && editingCustomProvider.keyCount > 0 && (
+              {editingCustomProvider && !isImportDraft && editingCustomProvider.keyCount > 0 && (
                 <span style={{ marginLeft: '0.5rem', color: '#6ee7b7', fontSize: '0.75rem' }}>
                   ({lang === 'zh' ? `已有 ${editingCustomProvider.keyCount} 个密钥` : `${editingCustomProvider.keyCount} key(s) configured`})
                 </span>
               )}
             </label>
-            {editingCustomProvider && providerKeys && providerKeys.length > 0 ? (
+            {editingCustomProvider && !isImportDraft && providerKeys && providerKeys.length > 0 ? (
               <>
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <button
@@ -460,7 +461,7 @@ export default function CustomProviderModal({
             ) : (
               <input
                 type="password"
-                placeholder={editingCustomProvider ? (lang === 'zh' ? '可选：测试新密钥' : 'Optional: test new key') : 'sk-...'}
+                placeholder={editingCustomProvider && !isImportDraft ? (lang === 'zh' ? '可选：测试新密钥' : 'Optional: test new key') : 'sk-...'}
                 value={apiKeyValue}
                 onChange={(e) => setApiKeyValue(e.target.value)}
                 style={{
@@ -475,7 +476,7 @@ export default function CustomProviderModal({
                 }}
               />
             )}
-            {editingCustomProvider && editingCustomProvider.keyCount > 0 && !providerKeys?.length && (
+            {editingCustomProvider && !isImportDraft && editingCustomProvider.keyCount > 0 && !providerKeys?.length && (
               <div style={{ fontSize: '0.72rem', color: '#6b7280', marginTop: '0.35rem' }}>
                 {lang === 'zh'
                   ? '编辑时无需重新输入已有密钥，如需测试新密钥请在此输入'
@@ -540,7 +541,7 @@ export default function CustomProviderModal({
               placeholder="e.g. custom_openai"
               value={formId}
               onChange={(e) => setFormId(e.target.value)}
-              disabled={!!editingCustomProvider}
+              disabled={!!editingCustomProvider && !isImportDraft}
               style={{
                 width: '100%',
                 padding: '0.6rem 0.8rem',
@@ -550,7 +551,7 @@ export default function CustomProviderModal({
                 color: '#fff',
                 fontSize: '0.9rem',
                 boxSizing: 'border-box',
-                opacity: editingCustomProvider ? 0.6 : 1,
+                opacity: editingCustomProvider && !isImportDraft ? 0.6 : 1,
               }}
             />
           </div>
@@ -1024,7 +1025,7 @@ export default function CustomProviderModal({
                 return;
               }
               
-              await onSaveCustomProvider({
+              const providerToSave: any = {
                 name: formId.trim(),
                 displayName: formDisplayName.trim(),
                 baseUrl: formBaseUrl.trim(),
@@ -1032,7 +1033,12 @@ export default function CustomProviderModal({
                 modelPrefixes: prefixes,
                 userAgent: formUserAgent.trim() || undefined,
                 models: formModels
-              });
+              };
+              if (!useExistingKey && apiKeyValue.trim()) {
+                providerToSave.apiKey = apiKeyValue.trim();
+              }
+
+              await onSaveCustomProvider(providerToSave);
             }}
             style={{
               padding: '0.5rem 1.25rem',
