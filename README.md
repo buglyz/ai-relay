@@ -135,7 +135,7 @@ curl -X POST https://你的项目.vercel.app/v1/chat/completions \
 
 🎉 **完成！** 你已经拥有一个支持多 Provider、自动故障转移的 AI API 中转服务。
 
-<details>
+<details id="-部署到-cloudflare-pages全自动">
 <summary><strong>☁️ 部署到 Cloudflare Pages（全自动）</strong></summary>
 
 **前置条件：** [Cloudflare 账号](https://dash.cloudflare.com/sign-up)（免费）+ GitHub 仓库
