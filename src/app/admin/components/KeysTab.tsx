@@ -47,6 +47,7 @@ interface KeysTabProps {
   onFetchProviderModels: (provider: any, apiKeyValue: string) => Promise<{ models: any[] }>;
   onImportProviderLink?: (link: string) => Promise<boolean>;
   onDeleteCustomProvider: (name: string) => Promise<void>;
+  apiKey: string;
 }
 
 export default function KeysTab(props: KeysTabProps) {
@@ -85,6 +86,7 @@ export default function KeysTab(props: KeysTabProps) {
     onFetchProviderModels,
     onImportProviderLink,
     onDeleteCustomProvider,
+    apiKey,
   } = props;
 
   return (
@@ -182,6 +184,8 @@ export default function KeysTab(props: KeysTabProps) {
         setCustomProviderModalOpen={setCustomProviderModalOpen}
         onImportProviderLink={onImportProviderLink}
         operationLoading={operationLoading}
+        apiKey={apiKey}
+        lang={lang}
         t={t}
       />
 

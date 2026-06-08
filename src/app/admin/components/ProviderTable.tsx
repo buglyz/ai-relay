@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import type { AdminData } from '../types';
+import CcSwitchImportButton from './CcSwitchImportButton';
 
 interface ProviderTableProps {
   data: AdminData;
@@ -11,6 +12,8 @@ interface ProviderTableProps {
   setCustomProviderModalOpen: (val: boolean) => void;
   onImportProviderLink?: (link: string) => Promise<boolean>;
   operationLoading?: boolean;
+  apiKey: string;
+  lang: 'zh' | 'en';
   t: any;
 }
 
@@ -56,6 +59,8 @@ export default function ProviderTable({
   setCustomProviderModalOpen,
   onImportProviderLink,
   operationLoading,
+  apiKey,
+  lang,
   t,
 }: ProviderTableProps) {
   const [showImportInput, setShowImportInput] = useState(false);
@@ -216,6 +221,7 @@ export default function ProviderTable({
               <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>{t.tblKeys}</th>
               <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>{t.tblAvailable}</th>
               <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem' }}>{t.tblModelPrefixes}</th>
+              <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>{t.ccSwitchExportCol || (lang === 'zh' ? '导出' : 'Export')}</th>
             </tr>
           </thead>
           <tbody>
@@ -264,6 +270,17 @@ export default function ProviderTable({
                     color: '#9ca3af',
                   }}>
                     {p.modelPrefixes.join(', ')}
+                  </td>
+                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
+                    <CcSwitchImportButton
+                      apiKey={apiKey}
+                      lang={lang}
+                      t={t}
+                      mode="provider"
+                      providerId={p.id}
+                      providerName={p.name}
+                      compact
+                    />
                   </td>
                 </tr>
               );

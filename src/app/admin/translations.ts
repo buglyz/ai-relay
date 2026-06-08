@@ -218,6 +218,14 @@ export const TRANSLATIONS = {
     restoreFailed: '导入备份失败',
     backupFailed: '导出备份失败',
     restoreInvalidFormat: '备份文件格式不正确，请确保是有效的配置备份文件。',
+    ccSwitchExportRelay: '导出到 CC Switch',
+    ccSwitchExportProvider: '导出',
+    ccSwitchExportCol: '导出',
+    ccSwitchBulkExportTitle: 'CC Switch 批量导出',
+    ccSwitchBulkExportDesc: '一次性导出所有已配置供应商的 CC Switch 导入链接文件。单个导入请使用顶部 AI Relay 入口或服务商密钥池列表里的导出按钮。',
+    ccSwitchBulkExportBtn: '导出全部供应商文件',
+    ccSwitchSensitiveNotice: '注意：ccswitch:// 导入链接会包含 API Key，请勿公开分享。',
+    ccSwitchExportFailed: '导出 CC Switch 配置失败',
 
     // Stats Backup & Restore
     statsBackupRestoreTitle: '📊 历史统计数据备份与恢复',
@@ -542,6 +550,14 @@ export const TRANSLATIONS = {
     restoreFailed: 'Failed to import backup',
     backupFailed: 'Failed to export backup',
     restoreInvalidFormat: 'Invalid backup file format. Please ensure it is a valid configuration backup.',
+    ccSwitchExportRelay: 'Export to CC Switch',
+    ccSwitchExportProvider: 'Export',
+    ccSwitchExportCol: 'Export',
+    ccSwitchBulkExportTitle: 'CC Switch Bulk Export',
+    ccSwitchBulkExportDesc: 'Export a JSON file containing CC Switch import links for all configured providers. Use the header or provider rows for one-click single imports.',
+    ccSwitchBulkExportBtn: 'Export All Providers',
+    ccSwitchSensitiveNotice: 'Note: ccswitch:// import links contain API keys. Do not share them publicly.',
+    ccSwitchExportFailed: 'Failed to export CC Switch configuration',
 
     // Stats Backup & Restore
     statsBackupRestoreTitle: '📊 Stats Backup & Restore',
