@@ -335,6 +335,7 @@ curl -X POST https://你的项目.vercel.app/v1/messages \
 | `XIAOMI_KEYS` | Xiaomi API Keys | ⬜ |
 | `XIAOMIMIMO_SGP_CODING_KEYS` | MiMo SGP Coding Plan API Keys | ⬜ |
 | `XIAOMI_CODING_KEYS` | MiMo Coding Plan API Keys | ⬜ |
+| `RELAY_UPSTREAM_TIMEOUT_MS` | 上游 Provider 请求超时时间，默认 `50000`；设为 `0` 可关闭主动超时 | ⬜ |
 | `RELAY_KV_USAGE_SAMPLE_RATE` | 用量统计写入采样率，`1` 为精确统计，`0.1` 表示约 10% 写入并按比例估算 | ⬜ |
 | `RELAY_API_KEY_MIN_LENGTH` | Admin 后台添加供应商 Key 时的最短字符数校验（默认 `20`，设为 `0` 可关闭限制） | ⬜ |
 

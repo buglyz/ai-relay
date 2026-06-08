@@ -41,6 +41,30 @@ const BROWSER_COMPAT_USER_AGENTS = [
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
   'Mozilla/5.0',
 ];
+const DEFAULT_UPSTREAM_TIMEOUT_MS = 50_000;
+
+class UpstreamTimeoutError extends Error {
+  public readonly timeoutMs: number;
+
+  constructor(timeoutMs: number) {
+    super(`Upstream request timed out after ${timeoutMs}ms`);
+    this.name = 'UpstreamTimeoutError';
+    this.timeoutMs = timeoutMs;
+  }
+}
+
+function getUpstreamTimeoutMs(): number {
+  const raw = process.env.RELAY_UPSTREAM_TIMEOUT_MS;
+  if (raw === undefined || raw.trim() === '') return DEFAULT_UPSTREAM_TIMEOUT_MS;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return DEFAULT_UPSTREAM_TIMEOUT_MS;
+  if (parsed <= 0) return 0;
+  return Math.max(1_000, Math.floor(parsed));
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError';
+}
 
 function getUserAgentCandidates(provider: ProviderConfig): Array<string | undefined> {
   const candidates: Array<string | undefined> = [
@@ -71,13 +95,34 @@ async function fetchUpstreamWithUserAgentCandidates(input: {
 }): Promise<Response> {
   const payload = JSON.stringify(input.body);
   let lastResponse: Response | null = null;
+  const timeoutMs = getUpstreamTimeoutMs();
 
   for (const customUserAgent of getUserAgentCandidates(input.provider)) {
-    const response = await fetch(input.url, {
-      method: 'POST',
-      headers: buildHeaders(input.provider.headerFormat, input.apiKey, input.isStream, input.clientUserAgent, customUserAgent),
-      body: payload,
-    });
+    const controller = timeoutMs > 0 ? new AbortController() : null;
+    let timedOut = false;
+    const timer = controller
+      ? setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+        }, timeoutMs)
+      : null;
+
+    let response: Response;
+    try {
+      response = await fetch(input.url, {
+        method: 'POST',
+        headers: buildHeaders(input.provider.headerFormat, input.apiKey, input.isStream, input.clientUserAgent, customUserAgent),
+        body: payload,
+        signal: controller?.signal,
+      });
+    } catch (error) {
+      if (timedOut || isAbortError(error)) {
+        throw new UpstreamTimeoutError(timeoutMs);
+      }
+      throw error;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
 
     lastResponse = response;
     if (!shouldRetryWithAlternateUserAgent(response)) {
@@ -413,6 +458,17 @@ async function tryProviderWithRetries(
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       if (smartRoutingConfigured) recordProviderResult(provider.name, false, Date.now() - startTime);
+      if (error instanceof UpstreamTimeoutError) {
+        if (currentKey) {
+          markCooldown(currentKey);
+          await recordError(provider.name, currentKey.hash, 504, `Upstream timeout after ${error.timeoutMs}ms`);
+        }
+        throw new RelayError(
+          `${provider.displayName} timed out after ${error.timeoutMs}ms while waiting for upstream response.`,
+          'upstream_error',
+          504
+        );
+      }
       if (currentKey) {
         await markCooldown(currentKey);
         const nextKey = await selectKey(provider);

@@ -308,6 +308,7 @@ Generate time-limited keys from the Admin dashboard:
 | `XIAOMI_KEYS` | Xiaomi API Keys | ⬜ |
 | `XIAOMIMIMO_SGP_CODING_KEYS` | MiMo SGP Coding Plan API keys | ⬜ |
 | `XIAOMI_CODING_KEYS` | MiMo Coding Plan API keys | ⬜ |
+| `RELAY_UPSTREAM_TIMEOUT_MS` | Upstream provider request timeout in milliseconds; defaults to `50000`; set to `0` to disable active timeout | ⬜ |
 | `RELAY_KV_USAGE_SAMPLE_RATE` | Usage write sample rate; `1` is exact, `0.1` writes about 10% and scales values as estimates | ⬜ |
 | `RELAY_API_KEY_MIN_LENGTH` | Minimum character length for provider keys added via the Admin panel (default `20`; set to `0` to disable) | ⬜ |
 
