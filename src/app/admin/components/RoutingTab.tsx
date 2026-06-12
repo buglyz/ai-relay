@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import HelpIcon from './HelpIcon';
 
 // ============================================================
 // Types (mirror smart-routing/types.ts for client-side)
@@ -23,6 +24,7 @@ interface ProviderHealthInfo {
 }
 
 interface RoutingConfig {
+  enabled: boolean;
   strategy: RoutingStrategy;
   costWeights: Array<{ provider: string; costPerMillionTokens: number; weight: number }>;
   maxLatencyMs: number;
@@ -31,6 +33,7 @@ interface RoutingConfig {
   stickySession: boolean;
   providerTimeoutMs: Record<string, number>;
   maxRetries: number;
+  preferredProviderTolerancePercent: number;
   updatedAt: number;
 }
 
@@ -96,10 +99,26 @@ const T = {
     resetFailures: '重置失败计数',
     resetSuccess: '失败计数已重置',
 
+    // Master switch
+    smartRoutingMode: '智能路由模式',
+    enabled: '已启用',
+    disabled: '已禁用',
+    smartRoutingHelp: `智能路由会在支持当前模型的供应商之间，根据延迟、成本或可用性自动选择最优供应商。
+
+启用后：
+✅ 仅评估支持该模型的供应商
+✅ 基于实时指标动态选择主供应商
+✅ 自带智能故障转移链（单次请求内可切换）
+
+注意：
+⚠️ 与「优先级规则 + 故障转移链」互斥
+⚠️ 启用智能路由后，上述两项配置将被忽略`,
+    smartRoutingWarning: '智能路由已启用，优先级规则与故障转移链配置将被忽略，路由完全由智能策略接管。',
+
     // Config
     config: '路由配置',
     failureThreshold: '故障转移阈值',
-    failureThresholdDesc: '连续失败 N 次后切换 Provider',
+    failureThresholdDesc: '连续失败 N 次后切换 Provider（仅智能路由模式）',
     recoverySeconds: '恢复检测时间',
     recoverySecondsDesc: '稳定 N 秒后自动恢复',
     stickySession: '会话粘滞',
@@ -108,6 +127,8 @@ const T = {
     maxRetriesDesc: '单次请求最大重试次数',
     maxLatencyMs: '最大延迟',
     maxLatencyMsDesc: '延迟优先策略下的最大可接受延迟（ms）',
+    preferredTolerance: '偏好供应商容忍度',
+    preferredToleranceDesc: '当原始供应商评分在最优供应商的 N% 以内时仍优先保留，避免在差距很小时频繁切换',
     save: '保存配置',
     saving: '保存中...',
     configSaved: '配置已保存',
@@ -159,9 +180,25 @@ const T = {
     resetFailures: 'Reset Failures',
     resetSuccess: 'Failure counter reset',
 
+    // Master switch
+    smartRoutingMode: 'Smart Routing Mode',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    smartRoutingHelp: `Smart routing automatically selects the optimal provider — among those supporting the requested model — based on latency, cost, or availability.
+
+When enabled:
+✅ Only evaluates providers that support the model
+✅ Dynamically picks the primary provider from real-time metrics
+✅ Includes an intelligent failover chain (can switch within a single request)
+
+Note:
+⚠️ Mutually exclusive with "Priority Rules + Fallback Chain"
+⚠️ When enabled, those two configs are ignored`,
+    smartRoutingWarning: 'Smart routing is enabled. Priority rules and fallback chain configs are ignored — routing is fully managed by the smart strategy.',
+
     config: 'Routing Config',
     failureThreshold: 'Failover Threshold',
-    failureThresholdDesc: 'Switch provider after N consecutive failures',
+    failureThresholdDesc: 'Switch provider after N consecutive failures (smart routing mode only)',
     recoverySeconds: 'Recovery Time',
     recoverySecondsDesc: 'Auto-recover after N seconds of stability',
     stickySession: 'Sticky Session',
@@ -170,6 +207,8 @@ const T = {
     maxRetriesDesc: 'Maximum retries per request',
     maxLatencyMs: 'Max Latency',
     maxLatencyMsDesc: 'Max acceptable latency for latency-first (ms)',
+    preferredTolerance: 'Preferred Provider Tolerance',
+    preferredToleranceDesc: 'Keep the original provider when its score is within N% of the best, to avoid churn on marginal differences',
     save: 'Save Config',
     saving: 'Saving...',
     configSaved: 'Config saved',
@@ -241,6 +280,7 @@ function strategyIcon(s: RoutingStrategy): string {
 }
 
 const DEFAULT_CONFIG: RoutingConfig = {
+  enabled: false,
   strategy: 'latency',
   costWeights: [],
   maxLatencyMs: 2000,
@@ -249,6 +289,7 @@ const DEFAULT_CONFIG: RoutingConfig = {
   stickySession: false,
   providerTimeoutMs: {},
   maxRetries: 3,
+  preferredProviderTolerancePercent: 20,
   updatedAt: 0,
 };
 
@@ -391,44 +432,58 @@ export default function RoutingTab({ apiKey, lang }: RoutingTabProps) {
 
   return (
     <div>
-      {/* Status overlay bar */}
-      <StatusBar status={status} t={t} />
-
-      {/* Strategy Selector */}
-      <StrategySelector
-        current={config.strategy}
-        onSwitch={switchStrategy}
+      {/* Master enable switch — smart routing is mutually exclusive with
+          priority rules + traditional fallback. */}
+      <MasterSwitch
+        enabled={config.enabled}
+        onToggle={(enabled) => saveConfig({ enabled })}
         saving={saving}
         t={t}
       />
 
-      {/* Two-column layout: Topology + Config */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-        gap: '1.5rem',
-        marginTop: '1.5rem',
-      }}>
-        {/* Provider Topology */}
-        <ProviderTopology
-          providers={status?.activeProviders || []}
-          onResetFailures={resetFailures}
-          t={t}
-        />
+      {/* Everything below only applies while smart routing is enabled. */}
+      {config.enabled && (
+        <>
+          {/* Status overlay bar */}
+          <StatusBar status={status} t={t} />
 
-        {/* Config Editor + Recent Switches */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <ConfigEditor
-            config={config}
-            editConfig={editConfig}
-            setEditConfig={setEditConfig}
-            onSave={saveConfig}
+          {/* Strategy Selector */}
+          <StrategySelector
+            current={config.strategy}
+            onSwitch={switchStrategy}
             saving={saving}
             t={t}
           />
-          <RecentSwitches switches={status?.recentSwitches || []} t={t} />
-        </div>
-      </div>
+
+          {/* Two-column layout: Topology + Config */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+            gap: '1.5rem',
+            marginTop: '1.5rem',
+          }} className="routing-grid">
+            {/* Provider Topology */}
+            <ProviderTopology
+              providers={status?.activeProviders || []}
+              onResetFailures={resetFailures}
+              t={t}
+            />
+
+            {/* Config Editor + Recent Switches */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <ConfigEditor
+                config={config}
+                editConfig={editConfig}
+                setEditConfig={setEditConfig}
+                onSave={saveConfig}
+                saving={saving}
+                t={t}
+              />
+              <RecentSwitches switches={status?.recentSwitches || []} t={t} />
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Message */}
       {message && (
@@ -471,6 +526,96 @@ function btnStyle(bg: string): React.CSSProperties {
     fontWeight: 500,
     transition: 'all 0.2s',
   };
+}
+
+// ---- Toggle Switch ----
+
+function ToggleSwitch({ checked, onChange, disabled }: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={() => !disabled && onChange(!checked)}
+      disabled={disabled}
+      style={{
+        width: '48px',
+        height: '26px',
+        borderRadius: '13px',
+        border: 'none',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        background: checked
+          ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)'
+          : 'rgba(255, 255, 255, 0.1)',
+        position: 'relative',
+        transition: 'background 0.2s',
+        opacity: disabled ? 0.5 : 1,
+      }}
+    >
+      <div style={{
+        width: '20px',
+        height: '20px',
+        borderRadius: '50%',
+        background: '#fff',
+        position: 'absolute',
+        top: '3px',
+        left: checked ? '25px' : '3px',
+        transition: 'left 0.2s',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+      }} />
+    </button>
+  );
+}
+
+// ---- Master Switch ----
+
+function MasterSwitch({ enabled, onToggle, saving, t }: {
+  enabled: boolean;
+  onToggle: (enabled: boolean) => void;
+  saving: boolean;
+  t: typeof T['zh'];
+}) {
+  return (
+    <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#e5e7eb' }}>
+            {t.smartRoutingMode}
+          </h3>
+          <HelpIcon tooltip={t.smartRoutingHelp} />
+        </div>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+          <span style={{ fontSize: '0.85rem', color: enabled ? '#34d399' : '#6b7280' }}>
+            {enabled ? t.enabled : t.disabled}
+          </span>
+          <ToggleSwitch
+            checked={enabled}
+            onChange={onToggle}
+            disabled={saving}
+          />
+        </label>
+      </div>
+
+      {enabled && (
+        <div style={{
+          marginTop: '0.75rem',
+          padding: '0.75rem',
+          borderRadius: '8px',
+          background: 'rgba(251, 191, 36, 0.1)',
+          border: '1px solid rgba(251, 191, 36, 0.2)',
+          color: '#fbbf24',
+          fontSize: '0.85rem',
+          display: 'flex',
+          gap: '0.5rem',
+        }}>
+          <span>⚠️</span>
+          <span>{t.smartRoutingWarning}</span>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ---- Status Bar ----
@@ -838,6 +983,18 @@ function ConfigEditor({
             onChange={(v) => setEditConfig(prev => ({ ...prev, maxLatencyMs: v }))}
           />
         )}
+
+        {/* Preferred-provider tolerance */}
+        <ConfigSlider
+          label={t.preferredTolerance}
+          desc={t.preferredToleranceDesc}
+          value={config.preferredProviderTolerancePercent}
+          min={0}
+          max={100}
+          step={5}
+          unit="%"
+          onChange={(v) => setEditConfig(prev => ({ ...prev, preferredProviderTolerancePercent: v }))}
+        />
 
         {/* Sticky Session toggle */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -83,6 +83,32 @@ export function clearProvidersCache(): void {
 }
 
 /**
+ * Whether a provider can serve the given (already alias-resolved, lower-cased)
+ * model. Mirrors the matching used by resolveProvider: an exact model-id match
+ * in the provider's `models` list, or a prefix match against `modelPrefixes`
+ * (wildcard prefixes end with -/./_; otherwise the prefix must equal the model).
+ *
+ * Used by smart routing to restrict the candidate pool to providers that
+ * actually support the requested model, rather than every configured provider.
+ */
+export function providerSupportsModel(provider: ProviderConfig, lowerModel: string): boolean {
+  if (provider.models) {
+    for (const m of provider.models) {
+      if (m.id && m.id.toLowerCase() === lowerModel) return true;
+    }
+  }
+  for (const prefix of provider.modelPrefixes) {
+    const isWildcard = prefix.endsWith('-') || prefix.endsWith('.') || prefix.endsWith('_');
+    if (isWildcard) {
+      if (lowerModel.startsWith(prefix)) return true;
+    } else if (lowerModel === prefix) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Resolve which provider a model name belongs to.
  * Automatically resolves aliases before matching.
  * Returns null if no provider matches.

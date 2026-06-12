@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import type { AdminData } from '../types';
+import HelpIcon from './HelpIcon';
 
 interface ProviderConfigEditorProps {
   data: AdminData;
@@ -519,8 +520,9 @@ export default function ProviderConfigEditor({
 
           {/* Column 2: Fallback Chain */}
           <div>
-            <h3 style={{ fontSize: '1.1rem', marginTop: 0, marginBottom: '0.75rem', color: '#e5e7eb', fontWeight: 600 }}>
+            <h3 style={{ fontSize: '1.1rem', marginTop: 0, marginBottom: '0.75rem', color: '#e5e7eb', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               {t.fallbackChainTitle}
+              <HelpIcon tooltip={t.fallbackChainHelp} />
             </h3>
 
             {/* Static / Managed indicator */}
