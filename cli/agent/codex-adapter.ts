@@ -35,10 +35,17 @@ export class CodexAdapter implements AgentAdapter {
       fs.copyFileSync(configPath, backupPath);
     }
 
+    // Escape URL for TOML string (prevent injection)
+    const escapedUrl = options.localRelayUrl
+      .replace(/\\/g, '\\\\')
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r');
+
     const snippet = `
 [model_providers.ai-relay-local]
 name = "AI Relay Local"
-base_url = "${options.localRelayUrl}/v1"
+base_url = "${escapedUrl}/v1"
 wire_api = "chat"
 requires_openai_auth = true
 `;

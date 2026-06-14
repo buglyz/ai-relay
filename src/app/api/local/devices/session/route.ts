@@ -11,9 +11,9 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   const { device_name, platform } = await request.json();
 
-  const deviceCode = `DC_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-  const deviceId = `device_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-  const deviceToken = `dt_${Math.random().toString(36).slice(2, 22)}${Math.random().toString(36).slice(2, 22)}`;
+  const deviceCode = `DC_${crypto.randomUUID()}`;
+  const deviceId = `device_${crypto.randomUUID()}`;
+  const deviceToken = `dt_${crypto.randomUUID().replace(/-/g, '')}`;
   const expiresAt = Date.now() + 600_000; // 10 min
 
   // Store pending session in KV

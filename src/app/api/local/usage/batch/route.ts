@@ -4,6 +4,7 @@
 
 import { NextRequest } from 'next/server';
 import { kv } from '@vercel/kv';
+import { hashDeviceToken } from '@/lib/local/device-auth';
 
 export const runtime = 'nodejs';
 
@@ -17,12 +18,13 @@ export async function POST(request: NextRequest) {
   }
 
   // Verify device token
+  const tokenHash = await hashDeviceToken(token);
   const devices = await kv.keys('device:*');
   let deviceId: string | null = null;
 
   for (const key of devices) {
     const device = await kv.hgetall(key);
-    if (device && device.token_hash === hashToken(token)) {
+    if (device && device.token_hash === tokenHash) {
       deviceId = key.replace('device:', '');
       break;
     }
@@ -44,8 +46,4 @@ export async function POST(request: NextRequest) {
   });
 
   return Response.json({ success: true, received: events?.length || 0 });
-}
-
-function hashToken(token: string): string {
-  return `hash_${token.slice(0, 8)}`;
 }

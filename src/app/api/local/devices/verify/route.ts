@@ -4,11 +4,16 @@
 
 import { NextRequest } from 'next/server';
 import { kv } from '@vercel/kv';
+import { requireAdminAuth } from '@/lib/admin';
+import { hashDeviceToken } from '@/lib/local/device-auth';
 
 export const runtime = 'nodejs';
 
 // POST /api/local/devices/verify - Approve device from Admin UI
 export async function POST(request: NextRequest) {
+  const authResponse = requireAdminAuth(request);
+  if (authResponse) return authResponse;
+
   const { device_code } = await request.json();
 
   if (!device_code) {
@@ -27,11 +32,11 @@ export async function POST(request: NextRequest) {
   // Mark as completed
   await kv.hset(`device_session:${device_code}`, { status: 'completed' });
 
-  // Create device record
+  // Create device record with secure token hash
   await kv.hset(`device:${session.device_id}`, {
     name: session.device_name,
     platform: session.platform,
-    token_hash: hashToken(session.device_token as string),
+    token_hash: await hashDeviceToken(session.device_token as string),
     status: 'online',
     config_version: 0,
     last_heartbeat: Date.now(),
@@ -39,9 +44,4 @@ export async function POST(request: NextRequest) {
   });
 
   return Response.json({ success: true, device_id: session.device_id });
-}
-
-function hashToken(token: string): string {
-  // Simple hash for demo - use crypto.subtle in production
-  return `hash_${token.slice(0, 8)}`;
 }
