@@ -15,44 +15,54 @@ import type { FileConfig } from '../lib/config-source';
  * Prompts the user to choose a setup method and guides them through it.
  */
 export async function interactiveConfigSetup(): Promise<void> {
-  console.log('\n🎉 Welcome to AI Relay Local!\n');
-  console.log('No configuration found. Let\'s set one up.\n');
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
 
-  const choice = await prompt(
-    'How would you like to configure AI Relay?\n' +
-    '  1. Login to cloud admin (recommended for team use)\n' +
-    '  2. Create local config file (recommended for solo use)\n' +
-    '  3. Use environment variables (quick setup)\n' +
-    '  4. Skip (configure manually later)\n' +
-    'Choose [1-4]: '
-  );
+  try {
+    console.log('\n🎉 Welcome to AI Relay Local!\n');
+    console.log('No configuration found. Let\'s set one up.\n');
 
-  switch (choice.trim()) {
-    case '1':
-      await setupCloudLogin();
-      break;
-    case '2':
-      await setupLocalConfig();
-      break;
-    case '3':
-      await setupEnvVars();
-      break;
-    case '4':
-      console.log('\nSkipping setup. You can configure later with:');
-      console.log('  - ai-relay login <cloud-url>');
-      console.log('  - ai-relay local:start --config ./config.json');
-      console.log('  - export RELAY_CONFIG_PATH=./config.json\n');
-      break;
-    default:
-      console.log('\n❌ Invalid choice. Exiting.\n');
-      process.exit(1);
+    const choice = await prompt(
+      rl,
+      'How would you like to configure AI Relay?\n' +
+      '  1. Login to cloud admin (recommended for team use)\n' +
+      '  2. Create local config file (recommended for solo use)\n' +
+      '  3. Use environment variables (quick setup)\n' +
+      '  4. Skip (configure manually later)\n' +
+      'Choose [1-4]: '
+    );
+
+    switch (choice.trim()) {
+      case '1':
+        await setupCloudLogin(rl);
+        break;
+      case '2':
+        await setupLocalConfig(rl);
+        break;
+      case '3':
+        await setupEnvVars();
+        break;
+      case '4':
+        console.log('\nSkipping setup. You can configure later with:');
+        console.log('  - ai-relay login <cloud-url>');
+        console.log('  - ai-relay local:start --config ./config.json');
+        console.log('  - export RELAY_CONFIG_PATH=./config.json\n');
+        break;
+      default:
+        console.log('\n❌ Invalid choice. Exiting.\n');
+        process.exit(1);
+    }
+  } finally {
+    rl.close();
   }
 }
 
-async function setupCloudLogin(): Promise<void> {
+async function setupCloudLogin(rl: readline.Interface): Promise<void> {
   console.log('\n📡 Cloud Login Setup\n');
 
-  const cloudUrl = await prompt('Enter your cloud admin URL (e.g., https://relay.example.com): ');
+  const cloudUrl = await prompt(rl, 'Enter your cloud admin URL (e.g., https://relay.example.com): ');
 
   if (!cloudUrl.trim()) {
     console.log('\n❌ No URL provided. Exiting.\n');
@@ -63,7 +73,7 @@ async function setupCloudLogin(): Promise<void> {
   console.log(`  ai-relay login ${cloudUrl.trim()}\n`);
 }
 
-async function setupLocalConfig(): Promise<void> {
+async function setupLocalConfig(rl: readline.Interface): Promise<void> {
   console.log('\n📄 Local Config File Setup\n');
 
   const configPath = getDefaultConfigPath();
@@ -79,7 +89,7 @@ async function setupLocalConfig(): Promise<void> {
   };
 
   // Prompt for OpenAI keys
-  const openaiKey = await prompt('OpenAI API Key (optional, press Enter to skip): ');
+  const openaiKey = await prompt(rl, 'OpenAI API Key (optional, press Enter to skip): ');
   if (openaiKey.trim()) {
     config.providers!.openai = {
       name: 'OpenAI',
@@ -89,7 +99,7 @@ async function setupLocalConfig(): Promise<void> {
   }
 
   // Prompt for Claude keys
-  const claudeKey = await prompt('Anthropic API Key (optional, press Enter to skip): ');
+  const claudeKey = await prompt(rl, 'Anthropic API Key (optional, press Enter to skip): ');
   if (claudeKey.trim()) {
     config.providers!.anthropic = {
       name: 'Anthropic',
@@ -99,7 +109,7 @@ async function setupLocalConfig(): Promise<void> {
   }
 
   // Prompt for DeepSeek keys
-  const deepseekKey = await prompt('DeepSeek API Key (optional, press Enter to skip): ');
+  const deepseekKey = await prompt(rl, 'DeepSeek API Key (optional, press Enter to skip): ');
   if (deepseekKey.trim()) {
     config.providers!.deepseek = {
       name: 'DeepSeek',
@@ -126,42 +136,45 @@ async function setupLocalConfig(): Promise<void> {
 }
 
 async function setupEnvVars(): Promise<void> {
-  console.log('\n🔧 Environment Variables Setup\n');
-
-  console.log('Add these to your shell profile (~/.bashrc, ~/.zshrc, etc.):\n');
-
-  const openaiKey = await prompt('OpenAI API Key (optional, press Enter to skip): ');
-  if (openaiKey.trim()) {
-    console.log(`export OPENAI_KEYS="${openaiKey.trim()}"`);
-  }
-
-  const claudeKey = await prompt('Anthropic API Key (optional, press Enter to skip): ');
-  if (claudeKey.trim()) {
-    console.log(`export CLAUDE_KEYS="${claudeKey.trim()}"`);
-  }
-
-  const deepseekKey = await prompt('DeepSeek API Key (optional, press Enter to skip): ');
-  if (deepseekKey.trim()) {
-    console.log(`export DEEPSEEK_KEYS="${deepseekKey.trim()}"`);
-  }
-
-  console.log('\nAfter adding these to your profile:');
-  console.log('  source ~/.bashrc  # or ~/.zshrc');
-  console.log('  ai-relay local:start\n');
-}
-
-/**
- * Prompt user for input and return their response.
- */
-function prompt(question: string): Promise<string> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
+  try {
+    console.log('\n🔧 Environment Variables Setup\n');
+
+    console.log('Add these to your shell profile (~/.bashrc, ~/.zshrc, etc.):\n');
+
+    const openaiKey = await prompt(rl, 'OpenAI API Key (optional, press Enter to skip): ');
+    if (openaiKey.trim()) {
+      console.log(`export OPENAI_KEYS="${openaiKey.trim()}"`);
+    }
+
+    const claudeKey = await prompt(rl, 'Anthropic API Key (optional, press Enter to skip): ');
+    if (claudeKey.trim()) {
+      console.log(`export CLAUDE_KEYS="${claudeKey.trim()}"`);
+    }
+
+    const deepseekKey = await prompt(rl, 'DeepSeek API Key (optional, press Enter to skip): ');
+    if (deepseekKey.trim()) {
+      console.log(`export DEEPSEEK_KEYS="${deepseekKey.trim()}"`);
+    }
+
+    console.log('\nAfter adding these to your profile:');
+    console.log('  source ~/.bashrc  # or ~/.zshrc');
+    console.log('  ai-relay local:start\n');
+  } finally {
+    rl.close();
+  }
+}
+
+/**
+ * Prompt user for input and return their response.
+ */
+function prompt(rl: readline.Interface, question: string): Promise<string> {
   return new Promise((resolve) => {
     rl.question(question, (answer) => {
-      rl.close();
       resolve(answer);
     });
   });

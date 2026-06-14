@@ -118,72 +118,48 @@ function createConfigSourceFromArg(
 /**
  * Build inline config from environment variables.
  * Supports provider keys and basic routing config.
+ *
+ * Automatically discovers providers from XXX_KEYS environment variables.
+ * Example: OPENAI_KEYS=sk-xxx will create an 'openai' provider.
  */
 function buildInlineConfigFromEnv(env: NodeJS.ProcessEnv): FileConfig | null {
   const providers: FileConfig['providers'] = {};
-  let hasProviders = false;
 
-  // OpenAI keys
-  if (env.OPENAI_KEYS) {
-    providers.openai = {
-      name: 'OpenAI',
-      apiKeys: env.OPENAI_KEYS.split(',').map(k => k.trim()),
-      baseUrl: env.OPENAI_BASE_URL || 'https://api.openai.com',
+  // Well-known provider mappings (for display names and default base URLs)
+  const knownProviders: Record<string, { name: string; defaultBaseUrl?: string }> = {
+    'OPENAI': { name: 'OpenAI', defaultBaseUrl: 'https://api.openai.com' },
+    'CLAUDE': { name: 'Anthropic', defaultBaseUrl: 'https://api.anthropic.com' },
+    'ANTHROPIC': { name: 'Anthropic', defaultBaseUrl: 'https://api.anthropic.com' },
+    'DEEPSEEK': { name: 'DeepSeek', defaultBaseUrl: 'https://api.deepseek.com' },
+    'XIAOMI': { name: 'Xiaomi' },
+    'XIAOMI_CODING': { name: 'Xiaomi Coding' },
+    'XIAOMIMIMO_SGP_CODING': { name: 'Xiaomimimo SGP Coding' },
+  };
+
+  // Scan environment for XXX_KEYS patterns
+  for (const [key, value] of Object.entries(env)) {
+    if (!key.endsWith('_KEYS') || !value) {
+      continue;
+    }
+
+    // Extract provider prefix (e.g., "OPENAI" from "OPENAI_KEYS")
+    const providerPrefix = key.slice(0, -5); // Remove "_KEYS"
+    const providerIdRaw = providerPrefix.toLowerCase().replace(/_/g, '-');
+
+    // Special case: CLAUDE_KEYS → anthropic provider
+    const providerId = providerIdRaw === 'claude' ? 'anthropic' : providerIdRaw;
+
+    const knownInfo = knownProviders[providerPrefix];
+    const baseUrlKey = `${providerPrefix}_BASE_URL`;
+
+    providers[providerId] = {
+      name: knownInfo?.name || toTitleCase(providerId),
+      apiKeys: value.split(',').map(k => k.trim()).filter(Boolean),
+      baseUrl: env[baseUrlKey] || knownInfo?.defaultBaseUrl,
     };
-    hasProviders = true;
   }
 
-  // Claude/Anthropic keys
-  if (env.CLAUDE_KEYS) {
-    providers.anthropic = {
-      name: 'Anthropic',
-      apiKeys: env.CLAUDE_KEYS.split(',').map(k => k.trim()),
-      baseUrl: env.CLAUDE_BASE_URL || 'https://api.anthropic.com',
-    };
-    hasProviders = true;
-  }
-
-  // DeepSeek keys
-  if (env.DEEPSEEK_KEYS) {
-    providers.deepseek = {
-      name: 'DeepSeek',
-      apiKeys: env.DEEPSEEK_KEYS.split(',').map(k => k.trim()),
-      baseUrl: env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
-    };
-    hasProviders = true;
-  }
-
-  // Xiaomi keys
-  if (env.XIAOMI_KEYS) {
-    providers.xiaomi = {
-      name: 'Xiaomi',
-      apiKeys: env.XIAOMI_KEYS.split(',').map(k => k.trim()),
-      baseUrl: env.XIAOMI_BASE_URL,
-    };
-    hasProviders = true;
-  }
-
-  // Xiaomi Coding keys
-  if (env.XIAOMI_CODING_KEYS) {
-    providers['xiaomi-coding'] = {
-      name: 'Xiaomi Coding',
-      apiKeys: env.XIAOMI_CODING_KEYS.split(',').map(k => k.trim()),
-      baseUrl: env.XIAOMI_CODING_BASE_URL,
-    };
-    hasProviders = true;
-  }
-
-  // Xiaomimimo SGP Coding keys
-  if (env.XIAOMIMIMO_SGP_CODING_KEYS) {
-    providers['xiaomimimo-sgp-coding'] = {
-      name: 'Xiaomimimo SGP Coding',
-      apiKeys: env.XIAOMIMIMO_SGP_CODING_KEYS.split(',').map(k => k.trim()),
-      baseUrl: env.XIAOMIMIMO_SGP_CODING_BASE_URL,
-    };
-    hasProviders = true;
-  }
-
-  if (!hasProviders) {
+  if (Object.keys(providers).length === 0) {
     return null;
   }
 
@@ -191,6 +167,18 @@ function buildInlineConfigFromEnv(env: NodeJS.ProcessEnv): FileConfig | null {
     version: 1,
     providers,
   };
+}
+
+/**
+ * Convert kebab-case or snake_case to Title Case.
+ * Example: "xiaomi-coding" → "Xiaomi Coding"
+ */
+function toTitleCase(str: string): string {
+  return str
+    .replace(/[-_]/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 /**
