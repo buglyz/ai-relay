@@ -4,7 +4,7 @@
 
 import type { ProviderConfig } from './types';
 import { PROVIDERS } from './registry';
-import { getCustomProviders, getModelAliasConfig, getPriorityRules } from '../admin/admin-config';
+import { getDefaultConfigStore } from '../config-store';
 import { findMatchingPriorityRule } from '../admin/priority-rules-core';
 
 /**
@@ -32,7 +32,8 @@ export async function resolveModelAlias(model: string, forceRefresh = false): Pr
   let requested = model.toLowerCase();
   const seen = new Set<string>();
   try {
-    const config = await getModelAliasConfig(forceRefresh);
+    const store = getDefaultConfigStore();
+    const config = await store.getModelAliases();
     for (let depth = 0; depth < 5; depth++) {
       if (seen.has(requested)) return original;
       seen.add(requested);
@@ -60,7 +61,8 @@ export async function getAllProviders(forceRefresh = false): Promise<Record<stri
     return cachedProviders;
   }
   try {
-    const custom = await getCustomProviders(forceRefresh);
+    const store = getDefaultConfigStore();
+    const custom = await store.getProviders();
     const merged = { ...PROVIDERS };
     for (const [name, config] of Object.entries(custom)) {
       merged[name] = {
@@ -121,7 +123,8 @@ export async function resolveProvider(model: string): Promise<ProviderConfig | n
 
   const allProviders = await getAllProviders();
   try {
-    const priorityRule = findMatchingPriorityRule(await getPriorityRules(), lowerModel);
+    const store = getDefaultConfigStore();
+    const priorityRule = findMatchingPriorityRule(await store.getPriorityRules(), lowerModel);
     if (priorityRule) {
       const preferred = priorityRule.providerOrder.find((providerName) => allProviders[providerName]);
       if (preferred) return allProviders[preferred];
