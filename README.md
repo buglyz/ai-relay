@@ -37,6 +37,19 @@
 > - 💻 **本地 CLI** — `airelay local:start` 一行命令，不消耗云端额度
 > - 🔧 **本地开发** — `npm run dev`，改代码即生效
 
+### 谁该用哪个？
+
+| | ☁️ Vercel | ☁️ Cloudflare | 💻 本地 CLI |
+|---|---|---|---|
+| **适合谁** | 轻量用户、快速试用 | 编码重度用户 | Agent / 多模态 / 高阶用户 |
+| **月请求量** | 中低频（月 Token < 5 亿） | 高频（日均数万次编码调用） | 不限，按机器性能走 |
+| **Token 统计** | 采样统计（可配采样率） | 采样统计（CF CPU 预算限制） | **精确统计**（SQLite 逐条记录） |
+| **部署形态** | Edge Serverless，冷启动 < 50ms | Edge Worker，全球分发 | 本机常驻进程，无冷启动 |
+| **存储** | Upstash Redis（KV） | Cloudflare D1 + KV | 本地 SQLite |
+| **典型场景** | 个人日常对话、轻量 API 中转 | Copilot / Cursor 高频编码调用 | Codex / Claude Code 本地 Agent、大图/视频多模态、密钥本机化 |
+| **核心限制** | Vercel 免费层有 invocation 和流量上限 | CF Worker 10ms CPU/请求，长响应需优化 | 需要自己保持进程运行 |
+
+> **一句话选择：** 用 Vercel 起步体验，编码多就切 Cloudflare，跑 Agent 或多模态就上本地 CLI。三种方式共用同一套配置和 API，随时可以迁移。
 
 ## 🎯 为什么选 AI Relay
 

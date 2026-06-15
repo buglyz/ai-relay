@@ -37,6 +37,19 @@
 > - 💻 **Local CLI** — `airelay local:start`, no cloud quota consumed
 > - 🔧 **Dev mode** — `npm run dev`, edit and iterate
 
+### Who should use which?
+
+| | ☁️ Vercel | ☁️ Cloudflare | 💻 Local CLI |
+|---|---|---|---|
+| **Best for** | Light users, quick tryout | Heavy coding users | Agent / multimodal / power users |
+| **Monthly volume** | Low-mid (< 500M tokens/month) | High frequency (daily coding sessions) | Unlimited, bound by machine specs |
+| **Token stats** | Sampling-based (configurable rate) | Sampling-based (CF CPU budget) | **Precise** (SQLite per-request logging) |
+| **Runtime** | Edge Serverless, cold start < 50ms | Edge Worker, global distribution | Persistent local process, no cold start |
+| **Storage** | Upstash Redis (KV) | Cloudflare D1 + KV | Local SQLite |
+| **Typical use** | Personal chat, light API relay | Copilot / Cursor high-freq coding | Codex / Claude Code local agent, large image/video multimodal, local key storage |
+| **Key limit** | Vercel free tier invocation & bandwidth cap | CF Worker 10ms CPU/request, long responses need optimization | Must keep process running yourself |
+
+> **TL;DR:** Start with Vercel to try it out. Switch to Cloudflare for heavy coding. Go local CLI for agents and multimodal. All three share the same config and API — migrate anytime.
 
 ## 🎯 Why AI Relay?
 
