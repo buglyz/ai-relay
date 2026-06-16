@@ -95,20 +95,14 @@ function defaultUserAgent(headerFormat: 'openai' | 'anthropic' | 'azure'): strin
 }
 
 /**
- * Client headers we forward verbatim to an Anthropic-format upstream so that
- * Claude CLI / Claude app features (prompt caching, interleaved thinking,
- * fine-grained tool streaming, …) keep working. These are gated by
- * `anthropic-beta`, and the client also pins the API version it speaks.
- */
-const FORWARDED_ANTHROPIC_HEADERS = ['anthropic-beta', 'anthropic-version'];
-
-/**
  * Build upstream request headers based on provider format.
  *
- * `passthroughHeaders` carries select client headers (e.g. `anthropic-beta`)
- * that must reach an Anthropic upstream unchanged. They are only applied for
- * the `anthropic` header format; for OpenAI/Azure upstreams they are ignored
- * because they carry no meaning there.
+ * `passthroughHeaders` carries client headers that should reach the upstream
+ * unchanged. For Anthropic upstreams, this includes anthropic-beta, x-app,
+ * x-claude-code-session-id, x-stainless-*, anthropic-dangerous-direct-browser-access,
+ * etc. — all headers that help the upstream identify client context and enable features.
+ * For OpenAI/Azure upstreams, passthroughHeaders are still forwarded (e.g. for
+ * x-stainless-* SDK tracking), but Anthropic-specific headers are harmless noise.
  */
 export function buildHeaders(
   headerFormat: 'openai' | 'anthropic' | 'azure',
@@ -135,11 +129,12 @@ export function buildHeaders(
     headers['Accept'] = 'text/event-stream';
   }
 
-  // Forward client-supplied Anthropic headers (anthropic-beta / anthropic-version)
-  // to Anthropic upstreams. A client-pinned version overrides our default above.
-  if (headerFormat === 'anthropic' && passthroughHeaders) {
-    for (const name of FORWARDED_ANTHROPIC_HEADERS) {
-      const value = passthroughHeaders[name];
+  // Forward all client-supplied headers to the upstream.
+  // The caller (route handler) already filtered out sensitive/conflicting headers
+  // like Authorization, Host, Content-Length, etc. A client-pinned anthropic-version
+  // overrides our default above.
+  if (passthroughHeaders) {
+    for (const [name, value] of Object.entries(passthroughHeaders)) {
       if (value) headers[name] = value;
     }
   }
