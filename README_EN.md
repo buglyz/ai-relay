@@ -47,7 +47,14 @@
 | **Runtime** | Edge Serverless, cold start < 50ms | Edge Worker, global distribution | Persistent local process, no cold start |
 | **Storage** | Upstash Redis (KV) | Cloudflare D1 + KV | Local SQLite |
 | **Typical use** | Personal chat, light API relay | Copilot / Cursor high-freq coding | Codex / Claude Code local agent, large image/video multimodal, local key storage |
-| **Key limit** | Vercel free tier invocation & bandwidth cap | CF Worker 10ms CPU/request, long responses need optimization | Must keep process running yourself |
+| **Key limit** | Free tier has traffic and storage caps; high-freq or multimodal usage will hit limits | CF Worker CPU time limited, long responses need optimization | Must keep process running yourself |
+
+> **⚠️ Vercel Hobby usage guidance:**
+> - **Good fit**: Personal chat, light API relay, dev/debugging phase
+> - **Not ideal**: High-frequency coding calls (e.g. Copilot/Cursor continuous use), large image/video multimodal, long reasoning tasks
+> - Free-tier storage and traffic are limited; the project provides usage sampling and multi-key rotation settings to help — all adjustable from the admin dashboard
+>
+> Heavy coding users should go directly with Cloudflare. Agent and multimodal users should use Local CLI.
 
 > **TL;DR:** Start with Vercel to try it out. Switch to Cloudflare for heavy coding. Go local CLI for agents and multimodal. All three share the same config and API — migrate anytime.
 
@@ -55,8 +62,8 @@
 
 | | |
 |---|---|
-| **Zero cost to start** | Runs on Vercel / Cloudflare free tiers — personal devs pay nothing |
-| **Live in 2 minutes** | Click button, fill variables. No server, no Docker, no backend ops |
+| **Serverless** | No server, no Docker, no ops — deploy to Vercel / Cloudflare in 2 minutes |
+| **Zero cost to start** | Runs on free tiers — personal devs pay nothing |
 | **One endpoint, drop-in** | Compatible with OpenAI SDK — just change `base_url`, zero code changes |
 | **Multi-key, multi-provider** | Automatic rotation, failover, circuit breaking — built-in resilience |
 | **Three deployment modes** | Cloud serverless / local CLI / dev mode — same config, same API |
